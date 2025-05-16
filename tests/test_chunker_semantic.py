@@ -2,7 +2,6 @@
 
 import pytest
 from unittest.mock import patch, MagicMock
-import json
 from e11ocutionist.chunker import (
     semantic_analysis,
     extract_and_parse_llm_response,
@@ -95,7 +94,7 @@ def test_extract_and_parse_llm_response_manually():
     # Create a sample response with BOUNDARY format
     response_text = """
     I've analyzed the document and identified these boundaries:
-    
+
     BOUNDARY: 000000-abc123, chapter
     BOUNDARY: abc123-def456, unit
     BOUNDARY: def456-ghi789, scene

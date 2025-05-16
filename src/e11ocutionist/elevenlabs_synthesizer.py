@@ -117,6 +117,15 @@ def synthesize_with_voice(
     Returns:
         Path to the saved audio file
     """
+    # Get API key from environment
+    api_key = os.environ.get("ELEVENLABS_API_KEY")
+    if not api_key:
+        msg = "ElevenLabs API key not found in environment"
+        raise ValueError(msg)
+
+    # Set API key
+    set_api_key(api_key)
+
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
