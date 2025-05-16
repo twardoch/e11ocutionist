@@ -1,0 +1,54 @@
+---
+description: Documents data flows between pipeline components for processing text through chunking, entity enhancement, and speech synthesis
+globs: work/malmo_*.py,work/say_11labs.py,src/e11ocutionist/*.py
+alwaysApply: false
+---
+
+
+# data-flow-diagram
+
+The text processing pipeline consists of five main stages with defined data flows between components:
+
+1. Chunking Stage (malmo_chunker.py)
+- Receives: Raw text input
+- Processes: Segments text into semantic chunks based on chapters/scenes
+- Outputs: XML-structured chunks to Entity Processing
+Importance Score: 85
+
+2. Entity Processing (malmo_entitizer.py)
+- Receives: XML chunks from Chunker
+- Processes: Named entity recognition and pronunciation tagging
+- Outputs: Entity-enhanced XML to Narration Enhancement
+Importance Score: 90
+
+3. Narration Enhancement (malmo_orator.py)  
+- Receives: Entity-tagged XML
+- Processes: Adds emphasis, pauses, emotional markers
+- Outputs: Enhanced narrative XML to Tone Adjustment
+Importance Score: 80
+
+4. Tone Adjustment (malmo_tonedown.py)
+- Receives: Enhanced narrative XML
+- Processes: Normalizes emphasis density and pronunciation cues
+- Outputs: Balanced XML to Speech Synthesis
+Importance Score: 75
+
+5. Speech Synthesis (malmo_11labs.py, say_11labs.py)
+- Receives: Final XML markup
+- Processes: Converts to 11Labs-compatible format
+- Outputs: Synthesized speech audio
+Importance Score: 85
+
+Key Data Transformations:
+- Raw text → Semantic chunks with structure
+- Chunks → Entity-aware content
+- Entity content → Narrative-enhanced text
+- Enhanced text → Balanced speech markup
+- Speech markup → Audio output
+
+State Management:
+- Progress tracking across pipeline stages
+- Preservation of processing state between steps
+- Error recovery with stage-specific retry logic
+
+$END$

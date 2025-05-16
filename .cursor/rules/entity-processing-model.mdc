@@ -1,0 +1,58 @@
+---
+description: Specification for handling named entity recognition, pronunciation rules, and entity dictionary management in text processing
+globs: **/malmo_entitizer.py,**/malmo_neifix.py
+alwaysApply: false
+---
+
+
+# entity-processing-model
+
+The entity processing model implements specialized named entity recognition and pronunciation management through several key components:
+
+## Core Entity Recognition System (Importance: 95)
+File: malmo_entitizer.py
+
+1. Named Entity Identification
+- Domain-specific NEI (Named Entity of Interest) detection
+- Language-aware entity classification for people, locations, organizations
+- Special handling for abbreviations and foreign terms
+- Context-sensitive processing based on document domain
+
+2. Entity Dictionary Evolution
+- Progressive building of pronunciation dictionary
+- Consistent pronunciation enforcement across document
+- Entity relationship tracking
+- New vs existing entity differentiation
+- Historical pronunciation preservation
+
+## Pronunciation Generation Rules (Importance: 90)
+File: malmo_entitizer.py
+
+1. Language-Specific Mapping
+- Syllable splitting with hyphenation
+- Palatalization rules for Polish (e.g., "i" treatment) 
+- Acronym expansion protocol
+- Foreign term transcription
+
+2. XML Tag Protocol
+- Common word tagging: <nei>text</nei>
+- Foreign terms: <nei orig="original">pronunciation</nei>
+- New entities: <nei orig="text" new="true">pronunciation</nei>
+
+## Entity Standardization (Importance: 85)
+File: malmo_neifix.py
+
+1. Text Transformation Rules
+- Initial uppercase letter preservation per word
+- Internal word capitalization normalization
+- Hyphen removal logic
+- Acronym preservation (space-separated single letters)
+- Attribute preservation during content transformation
+
+2. Special Case Handling
+- Standalone letter preservation 
+- Proper noun capitalization rules
+- Consistent formatting within nei tags
+- Original attribute retention
+
+$END$

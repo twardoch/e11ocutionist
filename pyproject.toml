@@ -18,6 +18,17 @@ classifiers = [
 ]
 
 dependencies = [
+    "fire",
+    "lxml",
+    "types-lxml",
+    "loguru",
+    "litellm>=1.67.2",
+    "python-dotenv",
+    "tenacity",
+    "rich",
+    "tiktoken",
+    "backoff",
+    "elevenlabs",
 ]
 
 
@@ -40,7 +51,7 @@ all = [
 ]
 
 [project.scripts]
-# CLINAME = "e11ocutionist.__main__:main"
+e11ocutionist = "e11ocutionist.__main__:main"
 
 
 

@@ -1,0 +1,53 @@
+---
+description: Analyzes document semantic chunking algorithms for multi-language text processing with focus on preserving narrative structure
+globs: *.py,src/**/*.py,work/**/*.py
+alwaysApply: false
+---
+
+
+# semantic-chunking-algorithm
+
+The semantic chunking system implements a hierarchical document analysis approach focused on preserving narrative structure while segmenting text for processing.
+
+Core Components:
+
+1. Document Hierarchy Analysis (Importance: 95)
+`work/malmo_chunker.py`
+- Hierarchical boundary detection:
+  - Chapter boundaries (English "Chapter X", Polish "Rozdział X")
+  - Scene boundaries based on setting/viewpoint changes
+  - Semantic units for thematic sections
+- Enforces minimum semantic unit requirements based on document length
+- Fallback detection mechanisms when primary analysis fails
+
+2. Token-Aware Processing (Importance: 90)
+`work/malmo_chunker.py`
+- Dynamic chunk size calculation preserving document structure
+- Never splits chapters across chunks
+- Maintains scene integrity where possible
+- Handles overflow of oversized semantic units
+- Balances chunk sizes while respecting boundaries
+
+3. Multi-Language Support (Importance: 85)
+`work/malmo_chunker.py`
+- Language-specific heading detection
+- Chapter number recognition in numeric and word forms
+- Special handling for literary forms (prose vs poetry)
+- Recognition of universal semantic separators (●, ***, etc.)
+
+4. Document Structure Rules (Importance: 80)
+`work/malmo_chunker.py`
+- Chapters always initiate new chunks
+- Scene preservation within size constraints
+- Nested semantic structure handling
+- Unit cohesion maintenance within chunks
+
+Key Features:
+- Preserves narrative flow during chunking
+- Handles multi-language content seamlessly
+- Maintains document hierarchy integrity
+- Provides consistent chunk boundaries for processing pipeline
+
+The system uniquely combines semantic analysis with practical chunking requirements while preserving the narrative structure essential for downstream processing tasks.
+
+$END$

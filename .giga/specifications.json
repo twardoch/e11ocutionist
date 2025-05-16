@@ -1,0 +1,22 @@
+[
+  {
+    "fileName": "main-overview.mdc",
+    "description": "Complete system overview documenting the multi-stage document processing pipeline, component interactions, and overall architecture"
+  },
+  {
+    "fileName": "semantic-chunking-algorithm.mdc",
+    "description": "Detailed documentation of the semantic chunking algorithm including chapter detection, scene boundaries, and token-aware processing logic from malmo_chunker.py"
+  },
+  {
+    "fileName": "entity-processing-model.mdc",
+    "description": "Comprehensive documentation of the named entity recognition system, pronunciation rules, and entity dictionary management from malmo_entitizer.py"
+  },
+  {
+    "fileName": "text-enhancement-pipeline.mdc",
+    "description": "Documentation of the complete text enhancement workflow including sentence restructuring, normalization, punctuation rules and emotional markup from malmo_orator.py"
+  },
+  {
+    "fileName": "data-flow-diagram.mdc",
+    "description": "Detailed documentation of data flow between all pipeline components from text input through chunking, entity processing, enhancement, tone adjustment, and final speech synthesis"
+  }
+]

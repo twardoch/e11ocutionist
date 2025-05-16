@@ -1,0 +1,71 @@
+
+START SPECIFICATION:
+---
+description: Use when documenting high-level architecture and business logic organization for text processing and speech synthesis pipelines, particularly those focused on literary content processing and multi-stage document transformations.
+globs: *.py,*.toml
+alwaysApply: false
+---
+
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+
+The system implements a multi-stage document processing pipeline for transforming literary content into enhanced speech synthesis markup.
+
+Core Processing Pipeline (Importance: 95)
+- Located in `work/malmo_all.py`
+- Five sequential stages:
+  1. Semantic Chunking
+  2. Entity Processing
+  3. Narration Enhancement 
+  4. Tone Adjustment
+  5. Text-to-Speech Markup Generation
+
+Document Understanding (Importance: 90)
+- Located in `work/malmo_chunker.py`
+- Semantic boundary detection for literary content:
+  - Chapter boundaries (multi-language)
+  - Scene transitions
+  - Thematic sections
+- Preserves document hierarchy while maintaining processing chunks
+
+Named Entity Management (Importance: 85)
+- Located in `work/malmo_entitizer.py` 
+- Language-aware entity recognition
+- Pronunciation mapping for multi-language content
+- Progressive entity dictionary building
+- Contextual entity relationship tracking
+
+Speech Enhancement (Importance: 80)
+- Located in `work/malmo_orator.py`
+- Four-stage narrative improvement:
+  - Sentence restructuring
+  - Word normalization
+  - Punctuation enhancement
+  - Emotional markup insertion
+
+Voice Synthesis Control (Importance: 75)
+- Located in `work/malmo_11labs.py`, `work/say_11labs.py`
+- Transform literary markup to speech synthesis format
+- Dialog and quotation normalization
+- Voice selection and synthesis orchestration
+- Personal voice profile management
+
+Supporting Systems (Importance: 65)
+- Tone adjustment (`work/malmo_tonedown.py`)
+- Entity formatting (`work/malmo_neifix.py`)
+- Progress tracking across pipeline stages
+- Error recovery and processing state management
+
+The architecture emphasizes maintaining semantic integrity and narrative quality through each transformation stage while preparing content for high-quality speech synthesis.
+
+$END$
+END SPECIFICATION
