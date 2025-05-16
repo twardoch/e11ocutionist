@@ -1,60 +1,70 @@
 ---
-description: Analyzes and documents data flow between pipeline components for text-to-speech transformation system
-globs: src/e11ocutionist/**/*.py,legacy_src/**/*.py
+description: Documents data flow relationships and pipeline architecture between components for text-to-speech processing
+globs: src/e11ocutionist/**/*.py,legacy_src/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-diagram
 
-Core Pipeline Data Flow:
+Core Pipeline Architecture (Importance: 95)
 
-1. Input Stage
-- Plain text or XML input received
-- Text chunked into processable segments (malmo_chunker.py)
-- Chunks maintain semantic boundaries via LLM analysis
-- Output: XML-formatted chunks with preserved semantics
+Main 5-stage processing pipeline with sequential data flow:
 
-2. Entity Processing Stage (malmo_entitizer.py)
-- Receives chunked XML documents
-- Identifies Named Entities of Interest (NEIs)
-- Adds pronunciation cues and language context
-- Output: XML with <nei> tags and pronunciation metadata
+1. Chunking Stage
+- Input: Raw text/markdown documents
+- Output: XML-structured chunks with semantic boundaries
+- Component: malmo_chunker.py, chunker.py
+- Handles document segmentation and structure preservation
 
-3. Narration Enhancement (malmo_orator.py)
-- Processes NEI-tagged content
-- Applies four-stage enhancement:
-  * Sentence restructuring 
-  * Word normalization
-  * Punctuation enhancement
-  * Emotional emphasis
-- Output: Enhanced XML with speech markers
+2. Entity Processing Stage  
+- Input: Chunked XML content
+- Output: XML with tagged named entities (<nei> tags)
+- Component: malmo_entitizer.py, entitizer.py
+- Processes named entities with pronunciation metadata
 
-4. Tone Adjustment Stage (malmo_tonedown.py)
-- Reviews and refines pronunciation cues
-- Balances emphasis tag density
-- Maintains language-aware pronunciation rules
-- Output: Balanced XML with refined speech cues
+3. Speech Enhancement Stage
+- Input: Entity-tagged XML
+- Output: XML with speech enhancement markup
+- Component: malmo_orator.py, orator.py
+- Adds speech timing, emphasis, and emotional markers
 
-5. Final Synthesis Stage (malmo_11labs.py)
-- Converts enhanced XML to ElevenLabs format
-- Processes dialog and quotation markers
-- Handles specialized pause/emphasis indicators
-- Output: ElevenLabs-compatible text
+4. Tone Adjustment Stage
+- Input: Enhanced XML
+- Output: XML with normalized emphasis
+- Component: malmo_tonedown.py, tonedown.py
+- Normalizes entity pronunciation and emphasis patterns
 
-Key Data Transformations:
-- Text → Semantic Chunks → Tagged Entities → Enhanced Narration → Balanced Speech → Synthesis Format
+5. Speech Synthesis Stage
+- Input: Processed XML
+- Output: Audio files via ElevenLabs
+- Component: malmo_11labs.py, elevenlabs_converter.py
+- Converts to final TTS format and generates speech
 
-Data Validation Points:
-- Chunk semantic coherence checks
-- Entity pronunciation consistency
-- Emphasis density validation
-- Dialog structure verification
+Key Data Flow Characteristics (Importance: 85)
 
-Progress Tracking:
-- Step completion status maintained
-- Processing metrics captured
-- Error states preserved
-- Resumable from any pipeline stage
+1. Sequential Dependencies
+- Each stage requires completion of previous stage
+- Maintains processing state between stages
+- Preserves partial progress on failures
+- Enables resumption from any stage
+
+2. State Preservation
+- Records completed steps and attempt counts
+- Tracks entity pronunciation dictionary
+- Maintains chunk processing progress
+- Preserves model parameters between runs
+
+3. Data Transformations
+- XML structure preserved through all stages
+- Progressive enhancement of speech markup
+- Entity tracking across document chunks
+- Emphasis and timing marker coordination
+
+4. Error Recovery Paths
+- Fallback processing options at each stage
+- State restoration on pipeline failures
+- Partial results preservation
+- Processing resumption capabilities
 
 $END$

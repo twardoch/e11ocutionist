@@ -1,55 +1,56 @@
 ---
-description: Implements intelligent document chunking system that preserves semantic coherence while managing token limits.
-globs: **/malmo_chunker.py,**/chunker.py,**/semantic/*.py
+description: Rules and logic for semantically chunking text while preserving meaning and structure for AI processing
+globs: 
 alwaysApply: false
 ---
 
 
 # semantic-chunking-algorithm
 
-Core Semantic Chunking Implementation:
+The semantic chunking system implements specialized rules for breaking documents into meaningful chunks while preserving semantic relationships and hierarchical structure.
 
-1. Semantic Unit Detection & Hierarchy
-- Implements multi-level semantic unit detection:
-  * Chapter boundaries (English "Chapter X", Polish "Rozdział X")
-  * Scene transitions within chapters 
-  * Thematic unit changes
-  * Separator markers ("●", "***") as unit boundaries
-- Enforces semantic hierarchy: chunks > units > items
-- Minimum semantic requirements: min_units = 5 * min_chunks
+Core Components:
 
-2. Boundary Detection Logic
-- Primary LLM-based boundary analysis
-- Fallback detection pipeline:
-  * Secondary model attempt
-  * Statistical pattern detection
-  * Heuristic boundary identification
-  * Default unit creation as final fallback
-- Preserves document coherence by keeping related content together
+1. Document Analysis (Importance: 95)
+- Multi-stage semantic boundary detection:
+  - Chapter boundaries using multilingual patterns ("Chapter X", "Rozdział X") 
+  - Scene transitions and semantic unit detection
+  - Minimum 5 units per chunk requirement
+  - Token-aware unit sizing
 
-3. Document Structure Analysis
-- Identifies semantic paragraph types:
-  * Chapter/section headings
-  * Markdown blockquotes and lists
-  * Code blocks and tables
-  * Images and figures
-- Determines content attachment rules:
-  * Short paragraphs following incomplete sentences
-  * Figure/image attachment to preceding content
+2. Attachment Rules (Importance: 85)
+- "Following" elements attach forward
+- "Preceding" elements attach backward
+- Standalone handling for:
+  - Headings
+  - Lists 
+  - Blockquotes
+- Whitespace/formatting preservation
 
-4. Intelligent Unit Management
-- Handles oversized units through smart splitting
-- Maintains semantic context during splits
-- Enforces minimum unit requirements
-- Preserves document structure hierarchy
+3. Adaptive Chunking Strategy (Importance: 90)
+- Chapter-based chunk initiation
+- Unit combination until token limit
+- Semantic splitting for oversized units
+- Hierarchical structure:
+  doc -> chunks -> units -> items
 
-Relevant Files:
-- legacy_src/malmo_chunker.py
-- src/e11ocutionist/chunker.py
+4. Semantic Boundary Classification (Importance: 80)
+- LLM-based natural boundary identification
+- Fallback boundary detection 
+- N-item boundary placement based on:
+  - Document length
+  - Structure patterns
+  - Content relationships
 
-Business Impact Score: 95
-- Core semantic understanding logic
-- Critical for maintaining document coherence
-- Essential for downstream processing
+5. Recovery Mechanisms (Importance: 75)
+- Heuristic unit detection fallback
+- Secondary LLM model (Gemini) fallback
+- Structure preservation during failures
+
+File Organization:
+```
+legacy_src/malmo_chunker.py     # Core chunking implementation
+src/e11ocutionist/chunker.py    # Modern chunking pipeline
+```
 
 $END$

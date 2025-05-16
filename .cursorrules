@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Generate high-level technical overviews focusing on core business logic and domain-specific implementations in text-to-speech document processing systems, specifically for projects involving semantic chunking, named entity handling, and speech synthesis optimization
+description: Generate high-level project overview documentation focusing on the core business logic and domain-specific implementations, particularly for text processing and speech synthesis pipelines
 globs: *.py,*.md
 alwaysApply: false
 ---
@@ -18,55 +18,60 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The E11ocutionist system implements a specialized text-to-speech document processing pipeline with five major business components:
+E11ocutionist is a specialized text-to-speech processing system with a multi-stage pipeline for optimizing literary content for speech synthesis.
 
-1. Document Semantic Analysis (Importance: 95)
-- Intelligent chunking system preserving semantic coherence
-- Multi-language boundary detection (chapters, scenes, units)
-- Hierarchical document structure maintenance
-- Semantic unit preservation rules
-- Located in: legacy_src/malmo_chunker.py
+Core Processing Pipeline:
+1. Document Chunking
+- Semantic analysis for intelligent document segmentation
+- Hierarchical organization: doc -> chunks -> units -> items
+- Language-aware chapter/scene boundary detection
+- Business Importance: 95
 
-2. Named Entity Processing (Importance: 90)
-- Language-aware entity recognition system
-- Multi-language pronunciation adaptation
-- Entity tracking and pronunciation consistency
-- Located in: legacy_src/malmo_entitizer.py
+2. Named Entity Processing
+- Entity recognition with pronunciation mapping
+- Multi-language entity detection and tagging
+- Domain-specific classification (people, locations, organizations)
+- Business Importance: 85
 
-3. Narration Enhancement (Importance: 85)
-- Four-stage text enhancement pipeline:
-  * Sentence restructuring for speech
-  * Word/symbol normalization
-  * Speech-optimized punctuation
-  * Emotional emphasis markers
-- Located in: legacy_src/malmo_orator.py
+3. Speech Enhancement
+- Sentence restructuring for natural flow
+- Word/symbol normalization for speech
+- Punctuation enhancement for pacing
+- Emotional emphasis tagging
+- Business Importance: 90
 
-4. Pronunciation Management (Importance: 80)
-- Two-stage pronunciation review system
-- Language-specific pronunciation rules
-- Emphasis density control
-- Located in: legacy_src/malmo_tonedown.py
+4. Tone Control
+- Emphasis pattern optimization
+- Pronunciation refinement
+- Dialog formatting standardization
+- Business Importance: 75
 
-5. Speech Synthesis Preparation (Importance: 75)
-- Dialog optimization for TTS
-- Quote normalization system
-- Voice profile management
-- Located in: legacy_src/malmo_11labs.py
+5. Speech Synthesis Integration
+- ElevenLabs-specific markup conversion
+- Personal voice profile management
+- Multi-voice batch processing
+- Business Importance: 80
 
-The system processes documents through these stages sequentially, with each component maintaining state and providing fallback mechanisms. The pipeline emphasizes maintaining semantic meaning while optimizing text for speech synthesis, with particular attention to multi-language support and pronunciation consistency.
+Key Implementation Components:
 
-Business Workflows:
-1. Document ingestion and semantic analysis
-2. Named entity detection and pronunciation mapping
-3. Speech optimization and emphasis control
-4. Voice synthesis preparation
-5. Final audio generation
+1. Text Processing Orchestration (src/e11ocutionist/e11ocutionist.py)
+- Manages complete processing pipeline
+- Handles state preservation between stages
+- Business Importance: 85
 
-Critical Integrations:
-- ElevenLabs API for voice synthesis
-- Language model integration for semantic analysis
-- Multi-language support system
-- Pronunciation dictionary management
+2. Dialog Processing System (src/e11ocutionist/elevenlabs_converter.py)
+- Custom dialog transformation rules
+- Quote standardization
+- Speech timing markup
+- Business Importance: 80
+
+3. Entity Management (src/e11ocutionist/entitizer.py)
+- Progressive entity processing
+- Pronunciation dictionary maintenance
+- Cross-document consistency
+- Business Importance: 75
+
+The system specializes in transforming literary content into enhanced speech synthesis markup through intelligent processing stages, maintaining semantic meaning while optimizing for natural speech output.
 
 $END$
 END SPECIFICATION

@@ -1,42 +1,65 @@
 ---
-description: Document text enhancement workflow rules for optimizing written content for speech synthesis
-globs: src/e11ocutionist/orator.py,legacy_src/malmo_orator.py
+description: Text processing pipeline logic for enhancing written content for speech synthesis, focusing on document structure, semantic analysis, and emotional markup.
+globs: src/e11ocutionist/**/*,legacy_src/malmo_*.py
 alwaysApply: false
 ---
 
 
 # text-enhancement-pipeline
 
-The text enhancement pipeline implements a four-stage document processing workflow specifically designed to optimize written content for spoken delivery:
+Core 5-Stage Text Enhancement Pipeline (Importance: 95)
+Located in `legacy_src/malmo_all.py` and `src/e11ocutionist/e11ocutionist.py`
 
-## Stage 1: Sentence Restructuring (Importance: 85)
-- Divides long sentences at logical points while preserving semantic meaning
-- Enforces paragraph endings with proper punctuation 
-- Maintains exact wording while improving structure for speech flow
-- Handles compound sentences with coordinating conjunctions
+1. Chunking Stage
+- Semantic boundary detection for document segmentation 
+- Hierarchical organization: doc -> chunks -> units -> items
+- Chapter and scene transition identification
+- Minimum semantic unit requirements (5 units per chunk)
 
-## Stage 2: Word Normalization (Importance: 75)
-- Context-aware numeric conversion ("42" → "forty-two")
-- Language-specific symbol resolution ("/" → "or", "&" → "and")
-- Preserves technical terms and domain-specific vocabulary
-- Handles abbreviations and acronyms based on domain context
+2. Entity Processing Stage
+- Language-specific entity detection 
+- Pronunciation mapping with <nei> tags
+- Tracks new vs existing entities
+- Domain-aware entity classification (people, locations, etc.)
 
-## Stage 3: Punctuation Enhancement (Importance: 80)  
-- Converts parenthetical expressions to ellipses for natural pauses
-- Transforms em/en dashes into appropriate pause markers
-- Maintains hyphenation in compound words
-- Adds strategic commas for pacing and clarity
+3. Oration Enhancement Stage
+- Sentence restructuring for natural speech flow
+- Word normalization (numbers to text)
+- Punctuation enhancement for pauses
+- Emotional markup tagging
+- Strategic pause insertion with <hr/> tags
 
-## Stage 4: Emotional Markup (Importance: 90)
-- Adds targeted emphasis tags (<em>) for key phrases
-- Inserts dramatic pauses (<hr/>) at scene transitions
-- Enhances expression through strategic exclamation marks
-- Preserves dialog dynamics and speaker transitions
+4. Tone Adjustment Stage
+- Emphasis control with minimum spacing rules
+- Pronunciation refinement based on language context
+- Entity pronunciation guidance optimization
+- NEI tag review and simplification
 
-Key Files:
-- src/e11ocutionist/orator.py
-- legacy_src/malmo_orator.py
+5. Voice Generation Stage
+- Dialog transformation for TTS
+- Quote normalization and standardization
+- Break timing markers
+- ElevenLabs-specific markup formatting
 
-The pipeline maintains document integrity while optimizing for spoken delivery through progressive enhancement stages, each building on the previous transformations while preserving semantic meaning.
+Speech Enhancement Rules (Importance: 85)
+Located in `legacy_src/malmo_orator.py`
+
+1. Text Structure Enhancement
+- Parenthetical expression handling with ellipses
+- Strategic dash/hyphen conversion to pause markers
+- Symbol resolution (/, &) with language awareness
+- Paragraph-level emotional emphasis
+
+2. Dialog Processing
+- Em dash conversion to speech-friendly markers
+- Nested dialog handling with <q> tags
+- Dialog state tracking
+- Quote standardization for TTS
+
+3. Emotional Markup
+- Context-aware emphasis placement
+- Dramatic pause insertion
+- Emotional delivery tags
+- Speech pacing control
 
 $END$
