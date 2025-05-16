@@ -131,8 +131,8 @@ __version__: str
 __version_tuple__: VERSION_TUPLE
 version_tuple: VERSION_TUPLE
 
-__version__ = version = '0.0.post2+ga51f03e'
-__version_tuple__ = version_tuple = (0, 0, 'post2', 'ga51f03e')
+__version__ = version = '1.0.0.post3+g4f8e413.d20250516'
+__version_tuple__ = version_tuple = (1, 0, 0, 'post3', 'g4f8e413.d20250516')
 </file>
 
 <file path="e11ocutionist/chunker.py">
@@ -4815,7 +4815,7 @@ def create_backup(file_path: str | Path, stage: str = "") -> Path | None:
         logger.warning(f"Cannot back up non-existent file: {file_path}")
         return None
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
     if stage:
         backup_path = file_path.with_name(
             f"{file_path.stem}_{stage}_{timestamp}{file_path.suffix}"

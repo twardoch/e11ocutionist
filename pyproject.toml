@@ -48,6 +48,23 @@ test = [
 
 
 all = [
+    "pre-commit>=3.6.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "pyupgrade>=3.19.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "fire",
+    "lxml",
+    "types-lxml",
+    "loguru",
+    "litellm>=1.67.2",
+    "python-dotenv",
+    "tenacity",
+    "rich",
+    "tiktoken",
+    "backoff",
+    "elevenlabs",
 ]
 
 [project.scripts]
@@ -154,7 +171,7 @@ version_scheme = "post-release"
 
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -169,7 +186,7 @@ warn_unreachable = true
 
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 line-length = 88
 
 [tool.ruff.lint]
@@ -202,9 +219,7 @@ extend-select = [
 ]
 ignore = ["ARG001", "E501", "I001", "RUF001", "PLR2004", "EXE003", "ISC001"]
 
-
-
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
 
 
@@ -247,14 +262,4 @@ min_rounds = 100
 min_time = 0.1
 histogram = true
 storage = "file"
-save-data = true
-compare = [
-    "min",    # Minimum time
-    "max",    # Maximum time
-    "mean",   # Mean time
-    "stddev", # Standard deviation
-    "median", # Median time
-    "iqr",    # Inter-quartile range
-    "ops",    # Operations per second
-    "rounds", # Number of rounds
-] 
+save-data = true 

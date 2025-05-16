@@ -117,7 +117,7 @@ def create_backup(file_path: str | Path, stage: str = "") -> Path | None:
         logger.warning(f"Cannot back up non-existent file: {file_path}")
         return None
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
     if stage:
         backup_path = file_path.with_name(
             f"{file_path.stem}_{stage}_{timestamp}{file_path.suffix}"
