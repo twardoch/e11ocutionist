@@ -17,10 +17,13 @@ The new code is in the `src/` folder.
 
 ### 2.1. Implement Unit Tests
 
-- [ ] Improve test coverage (currently at 29%, up from 15%)
+- [ ] Improve test coverage (currently at 38%, up from 15%)
   - [x] Implement unit tests for `tonedown.py` (coverage increased from 5% to 38%)
   - [x] Implement unit tests for `orator.py` (coverage increased from 6% to 24%)
   - [x] Implement unit tests for `chunker.py` (coverage increased from 7% to 16%)
+  - [x] Implement unit tests for `elevenlabs_converter.py` (coverage increased to 48%)
+  - [x] Implement unit tests for `elevenlabs_synthesizer.py` (coverage increased from 31% to 89%)
+  - [x] Implement unit tests for `neifix.py` (coverage increased from 10% to 95%)
   - [ ] Implement unit tests for remaining modules
 
 - [ ] Create test fixtures
@@ -54,9 +57,23 @@ The new code is in the `src/` folder.
   - [x] Test emphasis reduction
   - [x] Test NEI tag updates
 
-- [ ] Add tests for `elevenlabs_synthesizer.py` and `elevenlabs_converter.py`
-  - [ ] Test text conversion for TTS
-  - [ ] Test API integration (with mocks)
+- [x] Add tests for `elevenlabs_converter.py`
+  - [x] Test text extraction from XML
+  - [x] Test dialog processing
+  - [x] Test document processing with sample files
+  - [ ] Test with more complex dialog scenarios
+
+- [x] Add tests for `elevenlabs_synthesizer.py`
+  - [x] Test filename sanitization
+  - [x] Test voice filtering and selection
+  - [x] Test text-to-speech synthesis (with mocks)
+  - [x] Test API integration (with mocks)
+  - [x] Test error handling for missing API keys
+
+- [x] Add tests for `neifix.py`
+  - [x] Test NEI content transformation
+  - [x] Test input/output file handling
+  - [x] Test edge cases (empty files, missing output)
 
 - [ ] Add tests for integration between modules
   - [ ] Test passing results between pipeline stages
@@ -158,7 +175,9 @@ The new code is in the `src/` folder.
   - [x] Add tests for tonedown.py module (now at 38% coverage)
   - [x] Add tests for orator.py module (now at 24% coverage)
   - [x] Add tests for chunker.py module (now at 16% coverage, up from 7%)
-  - [ ] Add tests for elevenlabs integration modules
+  - [x] Add tests for elevenlabs_converter.py module (now at 48% coverage)
+  - [x] Add tests for elevenlabs_synthesizer.py module (now at 89% coverage, up from 31%)
+  - [x] Add tests for neifix.py module (now at 95% coverage, up from 10%)
   - [ ] Add tests for edge cases and error handling
 
 - [ ] Set up GitHub Actions workflow
