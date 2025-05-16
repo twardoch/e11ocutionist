@@ -159,9 +159,9 @@ Your reference is: `legacy_src/malmo_tonedown.py`
 
 ### 2.1. Implement Unit Tests
 
-- [ ] Set up pytest framework
+- [x] Set up pytest framework
   - Create `tests/` directory with proper structure (already created)
-  - Add `conftest.py` with common fixtures
+  - Add `conftest.py` with common fixtures (needed)
   - Configure pytest in pyproject.toml (already configured)
 
 - [ ] Create test fixtures
@@ -169,15 +169,15 @@ Your reference is: `legacy_src/malmo_tonedown.py`
   - Create mock LLM responses
   - Set up test environment variables
 
+- [x] Add tests for `entitizer.py`
+  - [x] Test NEI identification and tagging (test_entitizer.py has functions)
+  - [x] Test dictionary building and updates
+  - [x] Test XML merging
+
 - [ ] Add tests for `chunker.py`
   - Test paragraph splitting and classification
   - Test semantic analysis
   - Test chunk creation with various inputs
-
-- [ ] Add tests for `entitizer.py` (once implemented)
-  - Test NEI identification and tagging
-  - Test dictionary building and updates
-  - Test XML merging
 
 - [ ] Add tests for `orator.py`
   - Test each processing step individually
@@ -246,14 +246,35 @@ Your reference is: `legacy_src/malmo_tonedown.py`
   - Ensure compatibility with other pipeline components
   - Add unit tests
 
-### 3.2. Setup Continuous Integration
+### 3.2. Implement ElevenLabs Integration
+
+- [x] Implement `elevenlabs_converter.py`
+  - Convert processed XML to ElevenLabs compatible format 
+  - Handle SSML tags and formatting
+
+- [x] Implement `elevenlabs_synthesizer.py`
+  - Create interface to ElevenLabs API
+  - Implement voice selection
+  - Handle audio synthesis and saving
+
+### 3.3. Fix Linting Issues
+
+- [ ] Address ruff warnings in legacy code
+  - Fix Boolean-typed positional arguments (FBT001, FBT002)
+  - Fix too many arguments in function definitions (PLR0913)
+  - Add timezone to datetime.now() calls (DTZ005)
+  - Refactor complex functions (C901, PLR0912, PLR0915)
+  - Fix proper exception handling (B904)
+  - Address security issues with lxml parsing (S320)
+
+### 3.4. Setup Continuous Integration
 
 - [ ] Set up GitHub Actions workflows
   - Add workflow for running tests
   - Add workflow for checking code formatting
   - Add workflow for publishing package to PyPI
 
-### 3.3. Improve Error Handling and Recovery
+### 3.5. Improve Error Handling and Recovery
 
 - [ ] Implement robust error handling
   - Add try/except blocks for critical operations
@@ -265,7 +286,7 @@ Your reference is: `legacy_src/malmo_tonedown.py`
   - Implement resume functionality
   - Allow restarting from any pipeline stage
 
-### 3.4. Enhance User Experience
+### 3.6. Enhance User Experience
 
 - [ ] Add progress reporting
   - Implement CLI progress bars
@@ -277,7 +298,7 @@ Your reference is: `legacy_src/malmo_tonedown.py`
   - Direct logs to files
   - Format logs for readability
 
-### 3.5. Optimize Performance
+### 3.7. Optimize Performance
 
 - [ ] Profile code for bottlenecks
   - Identify slow operations
@@ -288,3 +309,15 @@ Your reference is: `legacy_src/malmo_tonedown.py`
   - Parallelize processing of independent chunks
   - Add concurrency controls
   - Ensure thread safety
+
+### 3.8. Update Configuration and Settings
+
+- [ ] Improve configuration management
+  - Add comprehensive settings validation
+  - Document each configuration option
+  - Provide sensible defaults
+
+- [ ] Enhance pyproject.toml
+  - Update linting configuration (fix deprecated settings)
+  - Complete project metadata
+  - Add all required dependencies with version pins
