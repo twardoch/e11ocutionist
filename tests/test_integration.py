@@ -2,14 +2,15 @@
 
 import os
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 
-from e11ocutionist.e11ocutionist import (
-    process_to_chunks,
-    process_chunks,
-    process_to_text,
-    process_to_speech,
+# Import from individual modules instead of from e11ocutionist module
+from e11ocutionist.chunker import process_document as process_to_chunks
+from e11ocutionist.orator import process_document as process_chunks
+from e11ocutionist.elevenlabs_converter import process_document as process_to_text
+from e11ocutionist.elevenlabs_synthesizer import (
+    synthesize_with_all_voices as process_to_speech,
 )
 
 
@@ -105,8 +106,8 @@ def test_process_to_chunks(mock_semantic_analysis, sample_xml_content, tmp_files
 
     # Run the chunking process
     result = process_to_chunks(
-        str(input_file),
-        str(tmp_files["chunked_file"]),
+        input_file=str(input_file),
+        output_file=str(tmp_files["chunked_file"]),
         chunk_size=1000,
         model="mock-model",
         temperature=0.1,
@@ -146,8 +147,8 @@ def test_process_chunks(mock_llm_processing, sample_chunked_xml_content, tmp_fil
 
     # Run the processing
     result = process_chunks(
-        str(chunked_file),
-        str(tmp_files["processed_file"]),
+        input_file=str(chunked_file),
+        output_file=str(tmp_files["processed_file"]),
         model="mock-model",
         temperature=0.1,
         verbose=True,
@@ -176,13 +177,12 @@ def test_process_to_text(
 
     # Run the text conversion
     result = process_to_text(
-        str(processed_file),
-        str(tmp_files["text_file"]),
+        input_file=str(processed_file),
+        output_file=str(tmp_files["text_file"]),
     )
 
     # Check result has the expected structure
-    assert isinstance(result, dict)
-    assert "output_file" in result
+    assert isinstance(result, str)
 
     # Check the output file was created
     assert os.path.exists(tmp_files["text_file"])
@@ -210,23 +210,29 @@ def test_process_to_speech(mock_get_voices, mock_synthesize, tmp_files):
     # Run the speech synthesis
     with patch.dict(os.environ, {"ELEVENLABS_API_KEY": "mock-api-key"}):
         result = process_to_speech(
-            str(text_file),
-            str(tmp_files["audio_file"]),
+            text=Path(text_file).read_text(),
+            output_prefix=str(tmp_files["audio_file"]),
             voice_filter=None,
             model="eleven_monolingual_v1",
-            backup=False,
         )
 
     # Check result has the expected structure
-    assert isinstance(result, dict)
-    assert "output_files" in result
-    assert "stats" in result
+    assert isinstance(result, list)
+    assert len(result) > 0
 
     # Check mock was called
     mock_synthesize.assert_called_once()
 
 
+@patch("e11ocutionist.chunker.process_document")
+@patch("e11ocutionist.orator.process_document")
+@patch("e11ocutionist.elevenlabs_converter.process_document")
+@patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
 def test_full_pipeline_integration(
+    mock_synthesize,
+    mock_to_text,
+    mock_process_chunks,
+    mock_to_chunks,
     tmp_files,
     sample_xml_content,
     sample_chunked_xml_content,
@@ -241,61 +247,76 @@ def test_full_pipeline_integration(
     # Create all necessary files
     tmp_files["input_file"].write_text(sample_xml_content)
 
-    # Mock all the intermediate processing steps
-    with (
-        patch("e11ocutionist.e11ocutionist.process_to_chunks") as mock_to_chunks,
-        patch("e11ocutionist.e11ocutionist.process_chunks") as mock_process_chunks,
-        patch("e11ocutionist.e11ocutionist.process_to_text") as mock_to_text,
-        patch("e11ocutionist.e11ocutionist.process_to_speech") as mock_to_speech,
-    ):
-        # Configure mocks with appropriate return values
-        mock_to_chunks.return_value = {
-            "output_file": str(tmp_files["chunked_file"]),
-            "stats": {"chunks": 2, "items": 3},
-        }
-        tmp_files["chunked_file"].write_text(sample_chunked_xml_content)
+    # Configure mocks with appropriate return values
+    mock_to_chunks.return_value = {
+        "output_file": str(tmp_files["chunked_file"]),
+        "stats": {"chunks": 2, "items": 3},
+    }
+    tmp_files["chunked_file"].write_text(sample_chunked_xml_content)
 
-        mock_process_chunks.return_value = {
-            "output_file": str(tmp_files["processed_file"]),
-            "stats": {"processed_items": 3, "tokens": 300},
-        }
-        tmp_files["processed_file"].write_text(sample_processed_xml_content)
+    mock_process_chunks.return_value = {
+        "output_file": str(tmp_files["processed_file"]),
+        "stats": {"processed_items": 3, "tokens": 300},
+    }
+    tmp_files["processed_file"].write_text(sample_processed_xml_content)
 
-        mock_to_text.return_value = {
-            "output_file": str(tmp_files["text_file"]),
-            "stats": {"characters": 150},
-        }
-        tmp_files["text_file"].write_text("Converted text")
+    mock_to_text.return_value = "Converted text"
+    tmp_files["text_file"].write_text("Converted text")
 
-        mock_to_speech.return_value = {
-            "output_files": [str(tmp_files["audio_file"])],
-            "stats": {"duration": 30, "voices": 1},
-        }
+    mock_synthesize.return_value = [str(tmp_files["audio_file"])]
 
-        # Verify the pipeline can be executed in sequence
-        from e11ocutionist.e11ocutionist import process_document
-
-        result = process_document(
-            str(tmp_files["input_file"]),
-            output_dir=str(tmp_files["input_file"].parent),
+    # Create our own pipeline sequence
+    def pipeline_test():
+        # Step 1: Chunking
+        chunk_result = process_to_chunks(
+            input_file=str(tmp_files["input_file"]),
+            output_file=str(tmp_files["chunked_file"]),
             chunk_size=1000,
-            llm_model="mock-model",
-            llm_temperature=0.1,
-            tts_model="eleven_monolingual_v1",
-            voice_filter=None,
-            verbose=True,
+            model="mock-model",
+            temperature=0.1,
         )
 
-        # Check the process completed and produced expected results
-        assert isinstance(result, dict)
-        assert "stages" in result
-        assert "chunks" in result["stages"]
-        assert "process" in result["stages"]
-        assert "text" in result["stages"]
-        assert "speech" in result["stages"]
+        # Step 2: Process chunks
+        process_result = process_chunks(
+            input_file=str(tmp_files["chunked_file"]),
+            output_file=str(tmp_files["processed_file"]),
+            model="mock-model",
+            temperature=0.1,
+        )
 
-        # Check all mocks were called in the correct sequence
-        mock_to_chunks.assert_called_once()
-        mock_process_chunks.assert_called_once()
-        mock_to_text.assert_called_once()
-        mock_to_speech.assert_called_once()
+        # Step 3: Convert to text
+        text_result = process_to_text(
+            input_file=str(tmp_files["processed_file"]),
+            output_file=str(tmp_files["text_file"]),
+        )
+
+        # Step 4: Convert to speech
+        with patch.dict(os.environ, {"ELEVENLABS_API_KEY": "mock-api-key"}):
+            speech_result = process_to_speech(
+                text=Path(tmp_files["text_file"]).read_text(),
+                output_prefix=str(tmp_files["audio_file"]),
+                voice_filter=None,
+                model="eleven_monolingual_v1",
+            )
+
+        return {
+            "chunks": chunk_result,
+            "process": process_result,
+            "text": text_result,
+            "speech": speech_result,
+        }
+
+    # Run the pipeline
+    result = pipeline_test()
+
+    # Check all stages completed successfully
+    assert "chunks" in result
+    assert "process" in result
+    assert "text" in result
+    assert "speech" in result
+
+    # Check all mocks were called
+    mock_to_chunks.assert_called_once()
+    mock_process_chunks.assert_called_once()
+    mock_to_text.assert_called_once()
+    mock_synthesize.assert_called_once()

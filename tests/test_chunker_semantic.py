@@ -71,7 +71,7 @@ def test_semantic_analysis(mock_completion, mock_llm_response):
     )
 
     doc_text = """This is the first paragraph.
-    
+
 This is the second paragraph, which continues the thought.
 
 ## New Section Heading
