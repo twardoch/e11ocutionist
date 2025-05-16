@@ -1,8 +1,8 @@
 
 START SPECIFICATION:
 ---
-description: Use when documenting high-level business logic organization for text-to-speech document processing systems, specifically focusing on semantic chunking, entity processing, and voice synthesis pipelines
-globs: src/e11ocutionist/*.py,legacy_src/*.py
+description: Generate high-level technical overviews focusing on core business logic and domain-specific implementations in text-to-speech document processing systems, specifically for projects involving semantic chunking, named entity handling, and speech synthesis optimization
+globs: *.py,*.md
 alwaysApply: false
 ---
 
@@ -18,47 +18,55 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The system implements a specialized text-to-speech document processing pipeline with five core business domains:
+The E11ocutionist system implements a specialized text-to-speech document processing pipeline with five major business components:
 
-1. Semantic Document Chunking (Importance: 95)
-- Intelligent document segmentation using LLM-based analysis
-- Multi-language chapter and scene break detection
-- Custom content type classification for headings, quotes, lists
-- Token budget management across semantic boundaries
-Path: src/e11ocutionist/chunker.py
+1. Document Semantic Analysis (Importance: 95)
+- Intelligent chunking system preserving semantic coherence
+- Multi-language boundary detection (chapters, scenes, units)
+- Hierarchical document structure maintenance
+- Semantic unit preservation rules
+- Located in: legacy_src/malmo_chunker.py
 
 2. Named Entity Processing (Importance: 90)
-- Language-aware entity recognition and pronunciation mapping
-- Progressive learning system for new entity discovery
-- Specialized handling of technical terms and foreign words
-- Domain-specific pronunciation rule application
-Path: src/e11ocutionist/entitizer.py
+- Language-aware entity recognition system
+- Multi-language pronunciation adaptation
+- Entity tracking and pronunciation consistency
+- Located in: legacy_src/malmo_entitizer.py
 
-3. Speech Enhancement Pipeline (Importance: 85)
-- Four-stage text optimization workflow:
-  * Sentence restructuring for natural flow
-  * Word normalization for speech patterns
-  * Punctuation enhancement for pacing
-  * Emotional emphasis markup
-Path: src/e11ocutionist/orator.py
+3. Narration Enhancement (Importance: 85)
+- Four-stage text enhancement pipeline:
+  * Sentence restructuring for speech
+  * Word/symbol normalization
+  * Speech-optimized punctuation
+  * Emotional emphasis markers
+- Located in: legacy_src/malmo_orator.py
 
-4. Tone Management System (Importance: 80)
-- Emphasis control algorithms with minimum distance rules
-- Language-specific pronunciation refinement
-- Case-sensitive entity variant tracking
-Path: src/e11ocutionist/tonedown.py
+4. Pronunciation Management (Importance: 80)
+- Two-stage pronunciation review system
+- Language-specific pronunciation rules
+- Emphasis density control
+- Located in: legacy_src/malmo_tonedown.py
 
-5. Voice Synthesis Integration (Importance: 75)
-- Personal voice categorization (cloned, generated, professional)
-- Dialog-specific formatting rules
-- Multi-speaker conversation handling
-- Speech timing and pause optimization
-Path: src/e11ocutionist/elevenlabs_synthesizer.py
+5. Speech Synthesis Preparation (Importance: 75)
+- Dialog optimization for TTS
+- Quote normalization system
+- Voice profile management
+- Located in: legacy_src/malmo_11labs.py
 
-The system maintains strict processing order:
-Chunking → Entitizing → Orating → Tone Adjustment → Voice Synthesis
+The system processes documents through these stages sequentially, with each component maintaining state and providing fallback mechanisms. The pipeline emphasizes maintaining semantic meaning while optimizing text for speech synthesis, with particular attention to multi-language support and pronunciation consistency.
 
-Each stage preserves document structure while implementing specialized transformations for optimal speech synthesis results.
+Business Workflows:
+1. Document ingestion and semantic analysis
+2. Named entity detection and pronunciation mapping
+3. Speech optimization and emphasis control
+4. Voice synthesis preparation
+5. Final audio generation
+
+Critical Integrations:
+- ElevenLabs API for voice synthesis
+- Language model integration for semantic analysis
+- Multi-language support system
+- Pronunciation dictionary management
 
 $END$
 END SPECIFICATION

@@ -1,55 +1,55 @@
 ---
-description: Semantic chunking algorithm documentation for handling document segmentation with context-aware boundaries and token management
-globs: **/chunker.py,**/malmo_chunker.py,**/semantic/*.py
+description: Implements intelligent document chunking system that preserves semantic coherence while managing token limits.
+globs: **/malmo_chunker.py,**/chunker.py,**/semantic/*.py
 alwaysApply: false
 ---
 
 
 # semantic-chunking-algorithm
 
-Core Document Chunking Algorithm:
+Core Semantic Chunking Implementation:
 
-1. Document Semantic Analysis (Score: 95)
-- LLM-based semantic boundary detection for natural content segmentation
-- Multi-language chapter detection (English/Polish) 
-- Scene break identification and meaningful unit segmentation
-- Minimum semantic density requirements (5 units per chunk)
-- Fallback boundary detection when LLM analysis fails
+1. Semantic Unit Detection & Hierarchy
+- Implements multi-level semantic unit detection:
+  * Chapter boundaries (English "Chapter X", Polish "Rozdział X")
+  * Scene transitions within chapters 
+  * Thematic unit changes
+  * Separator markers ("●", "***") as unit boundaries
+- Enforces semantic hierarchy: chunks > units > items
+- Minimum semantic requirements: min_units = 5 * min_chunks
 
-2. Document Structure Processing (Score: 85)
-- Content type classification system with specific rules for:
-  * Headings and chapter markers
-  * Blockquotes and lists 
+2. Boundary Detection Logic
+- Primary LLM-based boundary analysis
+- Fallback detection pipeline:
+  * Secondary model attempt
+  * Statistical pattern detection
+  * Heuristic boundary identification
+  * Default unit creation as final fallback
+- Preserves document coherence by keeping related content together
+
+3. Document Structure Analysis
+- Identifies semantic paragraph types:
+  * Chapter/section headings
+  * Markdown blockquotes and lists
   * Code blocks and tables
-- Attachment logic for content coherence:
-  * "following" elements attach forward
-  * "preceding" elements attach backward
-  * "normal" elements remain independent
+  * Images and figures
+- Determines content attachment rules:
+  * Short paragraphs following incomplete sentences
+  * Figure/image attachment to preceding content
 
-3. Token Management System (Score: 90)
-- Dynamic token counting for semantic units
-- Intelligent splitting of oversized units while preserving meaning
-- Token budget distribution across chunks
-- Token verification and rebalancing for optimal sizing
+4. Intelligent Unit Management
+- Handles oversized units through smart splitting
+- Maintains semantic context during splits
+- Enforces minimum unit requirements
+- Preserves document structure hierarchy
 
-4. Document Hierarchy Rules (Score: 80)
-- Three-tier structure:
-  * Chunks (token management)
-  * Units (semantic groups)
-  * Items (base content)
-- Semantic relationship preservation during chunking
-- Structural integrity maintenance
-
-5. Error Recovery Strategy (Score: 75)
-- Multi-stage semantic analysis fallback:
-  * Primary model (GPT-4.1)
-  * Secondary model (Gemini)
-  * Heuristic-based fallback
-- Document integrity preservation during failures
-- Minimum semantic structure guarantees
-
-Key Implementation Files:
-- src/e11ocutionist/chunker.py
+Relevant Files:
 - legacy_src/malmo_chunker.py
+- src/e11ocutionist/chunker.py
+
+Business Impact Score: 95
+- Core semantic understanding logic
+- Critical for maintaining document coherence
+- Essential for downstream processing
 
 $END$
