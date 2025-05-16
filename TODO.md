@@ -236,88 +236,108 @@ Your reference is: `legacy_src/malmo_tonedown.py`
   - Document typical processing workflows
   - Include sample inputs and expected outputs
 
-## 3. New Tasks
+## 3. Code Quality and Maintenance 
 
-### 3.1. Implement Missing Core Module
+### 3.1. Fix Linting Issues
 
-- [x] Implement `entitizer.py` (Highest Priority)
-  - Create file structure based on specification
-  - Implement all required functionality
-  - Ensure compatibility with other pipeline components
-  - Add unit tests
+- [ ] Update pyproject.toml configuration
+  - Move 'per-file-ignores' to 'lint.per-file-ignores' section
+  - Update target Python version to 3.12
+  - Add specific rules to address common issues
 
-### 3.2. Implement ElevenLabs Integration
+- [ ] Address FBT001/FBT002 warnings
+  - Replace boolean positional arguments with keyword-only arguments
+  - Update function signatures and calls throughout the codebase
+  - Add type hints for boolean parameters
 
-- [x] Implement `elevenlabs_converter.py`
-  - Convert processed XML to ElevenLabs compatible format 
-  - Handle SSML tags and formatting
+- [ ] Fix PLR0913 warnings (too many arguments)
+  - Refactor functions with too many parameters
+  - Create parameter classes/dataclasses where appropriate
+  - Use keyword arguments consistently
 
-- [x] Implement `elevenlabs_synthesizer.py`
-  - Create interface to ElevenLabs API
-  - Implement voice selection
-  - Handle audio synthesis and saving
+- [ ] Add timezone to datetime calls
+  - Replace datetime.now() with datetime.now(timezone.utc)
+  - Update date/time handling for consistency
+  - Add proper timezone awareness
 
-### 3.3. Fix Linting Issues
+- [ ] Refactor complex functions
+  - Break down functions with high complexity (C901)
+  - Reduce branch complexity (PLR0912)
+  - Reduce statement count (PLR0915)
 
-- [ ] Address ruff warnings in legacy code
-  - Fix Boolean-typed positional arguments (FBT001, FBT002)
-  - Fix too many arguments in function definitions (PLR0913)
-  - Add timezone to datetime.now() calls (DTZ005)
-  - Refactor complex functions (C901, PLR0912, PLR0915)
-  - Fix proper exception handling (B904)
-  - Address security issues with lxml parsing (S320)
+- [ ] Address security issues
+  - Fix lxml security warnings (S320)
+  - Implement proper input sanitization
+  - Address subprocess security concerns (S603)
 
-### 3.4. Setup Continuous Integration
+### 3.2. Code Structure Improvements
 
-- [ ] Set up GitHub Actions workflows
+- [ ] Implement consistent error handling
+  - Create custom exception classes
+  - Add exception hierarchy for different error types
+  - Use try/except with specific exceptions
+
+- [ ] Enhance module structure
+  - Organize related functions into logical classes
+  - Improve code reuse across modules
+  - Create clear interfaces between components
+
+- [ ] Implement configuration management
+  - Create central configuration object
+  - Add validation for configuration parameters
+  - Provide sensible defaults and documentation
+
+### 3.3. Testing and CI/CD
+
+- [ ] Increase test coverage
+  - Add tests for all core functionality
+  - Add integration tests for full pipeline
+  - Add tests for edge cases and error handling
+
+- [ ] Set up GitHub Actions workflow
   - Add workflow for running tests
-  - Add workflow for checking code formatting
-  - Add workflow for publishing package to PyPI
+  - Add workflow for linting and type checking
+  - Add workflow for publishing package
 
-### 3.5. Improve Error Handling and Recovery
+## 4. Feature Enhancements
 
-- [ ] Implement robust error handling
-  - Add try/except blocks for critical operations
-  - Provide meaningful error messages
-  - Handle partial failures gracefully
+### 4.1. Performance Optimizations
 
-- [ ] Add processing state management
-  - Save intermediate state to disk
-  - Implement resume functionality
-  - Allow restarting from any pipeline stage
+- [ ] Improve LLM usage efficiency
+  - Optimize prompts for token efficiency
+  - Implement caching for LLM responses
+  - Add batch processing where possible
 
-### 3.6. Enhance User Experience
+- [ ] Implement parallel processing
+  - Process chunks in parallel
+  - Add concurrency controls
+  - Ensure thread safety
+
+### 4.2. User Experience Improvements
 
 - [ ] Add progress reporting
   - Implement CLI progress bars
   - Add estimated time remaining
   - Show processing statistics
 
-- [ ] Improve logging
-  - Add configurable log levels
-  - Direct logs to files
-  - Format logs for readability
+- [ ] Create user-friendly error messages
+  - Add detailed diagnostics
+  - Suggest solutions for common errors
+  - Provide clear guidance for configuration issues
 
-### 3.7. Optimize Performance
+### 4.3. Additional Features
 
-- [ ] Profile code for bottlenecks
-  - Identify slow operations
-  - Optimize processing-intensive functions
-  - Implement caching where beneficial
+- [ ] Add voice customization options
+  - Support for voice cloning
+  - Implement voice style controls
+  - Add support for additional TTS providers
 
-- [ ] Implement parallel processing
-  - Parallelize processing of independent chunks
-  - Add concurrency controls
-  - Ensure thread safety
+- [ ] Implement document format conversions
+  - Add support for Markdown
+  - Add support for HTML
+  - Add support for ePub
 
-### 3.8. Update Configuration and Settings
-
-- [ ] Improve configuration management
-  - Add comprehensive settings validation
-  - Document each configuration option
-  - Provide sensible defaults
-
-- [ ] Enhance pyproject.toml
-  - Update linting configuration (fix deprecated settings)
-  - Complete project metadata
-  - Add all required dependencies with version pins
+- [ ] Create visualization tools
+  - Add speech synthesis preview
+  - Implement processing visualization
+  - Create interactive pipeline control

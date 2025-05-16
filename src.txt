@@ -131,8 +131,8 @@ __version__: str
 __version_tuple__: VERSION_TUPLE
 version_tuple: VERSION_TUPLE
 
-__version__ = version = '0.0.post1+ga8f678e.d20250516'
-__version_tuple__ = version_tuple = (0, 0, 'post1', 'ga8f678e.d20250516')
+__version__ = version = '0.0.post2+ga51f03e'
+__version_tuple__ = version_tuple = (0, 0, 'post2', 'ga51f03e')
 </file>
 
 <file path="e11ocutionist/chunker.py">

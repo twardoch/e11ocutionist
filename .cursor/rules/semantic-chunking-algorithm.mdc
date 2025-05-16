@@ -1,53 +1,55 @@
 ---
-description: Analyzes document semantic chunking algorithms for multi-language text processing with focus on preserving narrative structure
-globs: *.py,src/**/*.py,work/**/*.py
+description: Semantic chunking algorithm documentation for handling document segmentation with context-aware boundaries and token management
+globs: **/chunker.py,**/malmo_chunker.py,**/semantic/*.py
 alwaysApply: false
 ---
 
 
 # semantic-chunking-algorithm
 
-The semantic chunking system implements a hierarchical document analysis approach focused on preserving narrative structure while segmenting text for processing.
+Core Document Chunking Algorithm:
 
-Core Components:
+1. Document Semantic Analysis (Score: 95)
+- LLM-based semantic boundary detection for natural content segmentation
+- Multi-language chapter detection (English/Polish) 
+- Scene break identification and meaningful unit segmentation
+- Minimum semantic density requirements (5 units per chunk)
+- Fallback boundary detection when LLM analysis fails
 
-1. Document Hierarchy Analysis (Importance: 95)
-`work/malmo_chunker.py`
-- Hierarchical boundary detection:
-  - Chapter boundaries (English "Chapter X", Polish "Rozdział X")
-  - Scene boundaries based on setting/viewpoint changes
-  - Semantic units for thematic sections
-- Enforces minimum semantic unit requirements based on document length
-- Fallback detection mechanisms when primary analysis fails
+2. Document Structure Processing (Score: 85)
+- Content type classification system with specific rules for:
+  * Headings and chapter markers
+  * Blockquotes and lists 
+  * Code blocks and tables
+- Attachment logic for content coherence:
+  * "following" elements attach forward
+  * "preceding" elements attach backward
+  * "normal" elements remain independent
 
-2. Token-Aware Processing (Importance: 90)
-`work/malmo_chunker.py`
-- Dynamic chunk size calculation preserving document structure
-- Never splits chapters across chunks
-- Maintains scene integrity where possible
-- Handles overflow of oversized semantic units
-- Balances chunk sizes while respecting boundaries
+3. Token Management System (Score: 90)
+- Dynamic token counting for semantic units
+- Intelligent splitting of oversized units while preserving meaning
+- Token budget distribution across chunks
+- Token verification and rebalancing for optimal sizing
 
-3. Multi-Language Support (Importance: 85)
-`work/malmo_chunker.py`
-- Language-specific heading detection
-- Chapter number recognition in numeric and word forms
-- Special handling for literary forms (prose vs poetry)
-- Recognition of universal semantic separators (●, ***, etc.)
+4. Document Hierarchy Rules (Score: 80)
+- Three-tier structure:
+  * Chunks (token management)
+  * Units (semantic groups)
+  * Items (base content)
+- Semantic relationship preservation during chunking
+- Structural integrity maintenance
 
-4. Document Structure Rules (Importance: 80)
-`work/malmo_chunker.py`
-- Chapters always initiate new chunks
-- Scene preservation within size constraints
-- Nested semantic structure handling
-- Unit cohesion maintenance within chunks
+5. Error Recovery Strategy (Score: 75)
+- Multi-stage semantic analysis fallback:
+  * Primary model (GPT-4.1)
+  * Secondary model (Gemini)
+  * Heuristic-based fallback
+- Document integrity preservation during failures
+- Minimum semantic structure guarantees
 
-Key Features:
-- Preserves narrative flow during chunking
-- Handles multi-language content seamlessly
-- Maintains document hierarchy integrity
-- Provides consistent chunk boundaries for processing pipeline
-
-The system uniquely combines semantic analysis with practical chunking requirements while preserving the narrative structure essential for downstream processing tasks.
+Key Implementation Files:
+- src/e11ocutionist/chunker.py
+- legacy_src/malmo_chunker.py
 
 $END$

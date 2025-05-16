@@ -1,8 +1,8 @@
 
 START SPECIFICATION:
 ---
-description: Use when documenting high-level architecture and business logic organization for text processing and speech synthesis pipelines, particularly those focused on literary content processing and multi-stage document transformations.
-globs: *.py,*.toml
+description: Use when documenting high-level business logic organization for text-to-speech document processing systems, specifically focusing on semantic chunking, entity processing, and voice synthesis pipelines
+globs: src/e11ocutionist/*.py,legacy_src/*.py
 alwaysApply: false
 ---
 
@@ -18,54 +18,47 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The system implements a multi-stage document processing pipeline for transforming literary content into enhanced speech synthesis markup.
+The system implements a specialized text-to-speech document processing pipeline with five core business domains:
 
-Core Processing Pipeline (Importance: 95)
-- Located in `work/malmo_all.py`
-- Five sequential stages:
-  1. Semantic Chunking
-  2. Entity Processing
-  3. Narration Enhancement 
-  4. Tone Adjustment
-  5. Text-to-Speech Markup Generation
+1. Semantic Document Chunking (Importance: 95)
+- Intelligent document segmentation using LLM-based analysis
+- Multi-language chapter and scene break detection
+- Custom content type classification for headings, quotes, lists
+- Token budget management across semantic boundaries
+Path: src/e11ocutionist/chunker.py
 
-Document Understanding (Importance: 90)
-- Located in `work/malmo_chunker.py`
-- Semantic boundary detection for literary content:
-  - Chapter boundaries (multi-language)
-  - Scene transitions
-  - Thematic sections
-- Preserves document hierarchy while maintaining processing chunks
+2. Named Entity Processing (Importance: 90)
+- Language-aware entity recognition and pronunciation mapping
+- Progressive learning system for new entity discovery
+- Specialized handling of technical terms and foreign words
+- Domain-specific pronunciation rule application
+Path: src/e11ocutionist/entitizer.py
 
-Named Entity Management (Importance: 85)
-- Located in `work/malmo_entitizer.py` 
-- Language-aware entity recognition
-- Pronunciation mapping for multi-language content
-- Progressive entity dictionary building
-- Contextual entity relationship tracking
+3. Speech Enhancement Pipeline (Importance: 85)
+- Four-stage text optimization workflow:
+  * Sentence restructuring for natural flow
+  * Word normalization for speech patterns
+  * Punctuation enhancement for pacing
+  * Emotional emphasis markup
+Path: src/e11ocutionist/orator.py
 
-Speech Enhancement (Importance: 80)
-- Located in `work/malmo_orator.py`
-- Four-stage narrative improvement:
-  - Sentence restructuring
-  - Word normalization
-  - Punctuation enhancement
-  - Emotional markup insertion
+4. Tone Management System (Importance: 80)
+- Emphasis control algorithms with minimum distance rules
+- Language-specific pronunciation refinement
+- Case-sensitive entity variant tracking
+Path: src/e11ocutionist/tonedown.py
 
-Voice Synthesis Control (Importance: 75)
-- Located in `work/malmo_11labs.py`, `work/say_11labs.py`
-- Transform literary markup to speech synthesis format
-- Dialog and quotation normalization
-- Voice selection and synthesis orchestration
-- Personal voice profile management
+5. Voice Synthesis Integration (Importance: 75)
+- Personal voice categorization (cloned, generated, professional)
+- Dialog-specific formatting rules
+- Multi-speaker conversation handling
+- Speech timing and pause optimization
+Path: src/e11ocutionist/elevenlabs_synthesizer.py
 
-Supporting Systems (Importance: 65)
-- Tone adjustment (`work/malmo_tonedown.py`)
-- Entity formatting (`work/malmo_neifix.py`)
-- Progress tracking across pipeline stages
-- Error recovery and processing state management
+The system maintains strict processing order:
+Chunking → Entitizing → Orating → Tone Adjustment → Voice Synthesis
 
-The architecture emphasizes maintaining semantic integrity and narrative quality through each transformation stage while preparing content for high-quality speech synthesis.
+Each stage preserves document structure while implementing specialized transformations for optimal speech synthesis results.
 
 $END$
 END SPECIFICATION

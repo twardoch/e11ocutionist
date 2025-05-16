@@ -1,58 +1,51 @@
 ---
-description: Specification for handling named entity recognition, pronunciation rules, and entity dictionary management in text processing
-globs: **/malmo_entitizer.py,**/malmo_neifix.py
+description: Specifications for the named entity recognition system, pronunciation rules, and entity dictionary management
+globs: **/malmo_entitizer.py,**/entitizer.py,**/neifix.py
 alwaysApply: false
 ---
 
 
 # entity-processing-model
 
-The entity processing model implements specialized named entity recognition and pronunciation management through several key components:
+The entity processing system implements specialized rules for identifying, tagging and managing named entities requiring custom pronunciation handling in text-to-speech synthesis.
 
-## Core Entity Recognition System (Importance: 95)
-File: malmo_entitizer.py
+Core Components:
 
-1. Named Entity Identification
-- Domain-specific NEI (Named Entity of Interest) detection
-- Language-aware entity classification for people, locations, organizations
-- Special handling for abbreviations and foreign terms
-- Context-sensitive processing based on document domain
+1. Named Entity Recognition System (Importance: 95)
+- Identifies domain-specific named entities requiring pronunciation guidance
+- Maintains entity dictionary with language-specific pronunciations
+- Progressive learning updates dictionary as new entities are discovered
+- Preserves case-sensitive variants while enabling case-insensitive matching
 
-2. Entity Dictionary Evolution
-- Progressive building of pronunciation dictionary
-- Consistent pronunciation enforcement across document
-- Entity relationship tracking
-- New vs existing entity differentiation
-- Historical pronunciation preservation
+2. Entity Classification Rules (Importance: 85)
+- Proper names (people, places, organizations)
+- Technical terms and jargon
+- Foreign words and phrases 
+- Abbreviations/acronyms
+- Complex numerical expressions
+- Unusual spellings
 
-## Pronunciation Generation Rules (Importance: 90)
-File: malmo_entitizer.py
+3. Pronunciation Mapping Policies (Importance: 90)
+- Language-specific orthography transcription
+- Handles palatalization rules (e.g. "sea" → "sji" in Polish)
+- Syllable division with hyphens for complex pronunciations
+- Special handling for non-standard characters and accents
 
-1. Language-Specific Mapping
-- Syllable splitting with hyphenation
-- Palatalization rules for Polish (e.g., "i" treatment) 
-- Acronym expansion protocol
-- Foreign term transcription
+4. XML Entity Tagging Schema (Importance: 80)
+```xml
+<nei orig="ORIGINAL" new="true">PRONUNCIATION</nei>
+```
+- Tracks first occurrence with new="true" attribute
+- Maintains original spelling in orig attribute
+- Contains language-specific pronunciation guidance
+- Enforces no nested tags rule
 
-2. XML Tag Protocol
-- Common word tagging: <nei>text</nei>
-- Foreign terms: <nei orig="original">pronunciation</nei>
-- New entities: <nei orig="text" new="true">pronunciation</nei>
-
-## Entity Standardization (Importance: 85)
-File: malmo_neifix.py
-
-1. Text Transformation Rules
-- Initial uppercase letter preservation per word
-- Internal word capitalization normalization
-- Hyphen removal logic
-- Acronym preservation (space-separated single letters)
-- Attribute preservation during content transformation
-
-2. Special Case Handling
-- Standalone letter preservation 
-- Proper noun capitalization rules
-- Consistent formatting within nei tags
-- Original attribute retention
+5. Processing Pipeline (Importance: 75)
+File: malmo_entitizer.py, entitizer.py
+- Chunk-based incremental processing
+- Maintains entity consistency across document
+- Updates global entity dictionary progressively
+- Preserves document formatting and whitespace
+- Multi-stage fallback strategy for failed entity recognition
 
 $END$

@@ -1,61 +1,45 @@
 ---
-description: Documentation of text enhancement processing workflow including sentence restructuring, normalization and emotional markup rules
-globs: work/malmo_orator.py,work/malmo_*.py
+description: Specification for text enhancement pipeline including sentence restructuring, normalization, punctuation rules and emotional markup
+globs: src/e11ocutionist/orator.py,legacy_src/malmo_orator.py
 alwaysApply: false
 ---
 
 
 # text-enhancement-pipeline
 
-The text enhancement pipeline implements a multi-stage document processing workflow focused on improving narrative speech quality through structured transformations.
+The text enhancement pipeline implements a four-stage document processing workflow specifically designed for optimizing written content for speech synthesis:
 
-## Core Enhancement Stages (Importance: 95)
-1. Sentence Restructuring
-- Splits long sentences at logical points while maintaining semantic integrity
-- Enforces paragraph punctuation rules
-- Preserves XML document hierarchy
+## Stage 1: Sentence Restructuring (Importance: 85)
+- Splits long sentences at logical pause points using commas and semicolons
+- Enforces paragraph breaks through double newlines
+- Requires punctuation marks at paragraph/heading endings
+- Processes content in batches to manage token limits
 
-2. Word Normalization 
-- Language-aware conversion of numeric digits to spelled words
-- Symbol transformation to appropriate conjunctions 
-- Context-sensitive symbol resolution
+## Stage 2: Word Normalization (Importance: 75) 
+- Converts numerical digits to spelled-out words with context awareness
+- Transforms symbols (/, &) into appropriate speech-friendly conjunctions
+- Implements language-specific handling of special characters
+- Maintains original meaning while optimizing for spoken delivery
 
-3. Punctuation Enhancement
-- Parenthetical expression handling with ellipses
-- Em/en dash conversion to pause indicators
-- Preservation of hyphenated word structures
+## Stage 3: Punctuation Enhancement (Importance: 90)
+- Handles parenthetical expressions by adding ellipses for dramatic effect
+- Converts em/en dashes to pauses when surrounded by spaces  
+- Preserves hyphenation in compound words
+- Inserts pause markers (<hr/>) after colons
+- Optimizes list item pacing
+- Removes redundant commas
 
-4. Emotional Markup
-- Strategic emphasis tag placement for speech delivery
-- Insertion of dramatic pauses using <hr/> tags
-- Selective exclamation mark enhancement
-- Natural flow maintenance with controlled emphasis density
+## Stage 4: Emotional Emphasis (Importance: 95)
+- Adds XML-based emphasis tags (<em>) for dramatic delivery
+- Inserts dramatic pauses using <hr/> tags
+- Strategic placement of exclamation marks for energy
+- Maintains natural text fluidity while adding expressiveness
+- Implements minimum distance rules between emphasis markers
 
-## Entity Processing (Importance: 85)
-- Language-specific named entity recognition
-- Pronunciation generation with syllable splitting
-- Entity tagging protocol with differentiated markup
-- Progressive pronunciation dictionary building
-- Context-aware entity relationship tracking
+Key Implementation Files:
+- src/e11ocutionist/orator.py
+- legacy_src/malmo_orator.py
 
-## Document Structure Rules (Importance: 80)
-- Chapter boundary preservation
-- Scene integrity maintenance
-- Semantic unit cohesion
-- Nested structure handling
-- Multi-language support for headings and chapters
-
-## Speech Synthesis Preparation (Importance: 75)
-- Quote normalization for speech synthesis
-- Dialog line detection and markup
-- Speaker alternation handling
-- Break timing standardization
-- Voice model compatibility transformations
-
-File Paths:
-- work/malmo_orator.py
-- work/malmo_entitizer.py
-- work/malmo_chunker.py
-- work/malmo_11labs.py
+The pipeline focuses specifically on enhancing text for optimal speech synthesis while preserving semantic meaning and adding natural-sounding emotional expression.
 
 $END$
