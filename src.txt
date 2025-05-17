@@ -1480,7 +1480,7 @@ def orate(
             verbose=verbose,
         )
         logger.info(f"Orating completed: {result}")
-        return result
+        return output_file
     except Exception as e:
         logger.error(f"Processing failed: {e}")
         raise
@@ -1656,36 +1656,7 @@ def process(  # noqa: PLR0913
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the complete e11ocutionist pipeline.
-
-    Args:
-        input_file: Path to input file
-        output_dir: Path to output directory (optional)
-        start_step: Step to start from (chunking, entitizing, orating, toning_down, elevenlabs_conversion)
-        force_restart: Whether to force restart from the specified step
-        backup: Whether to create backups of files before modifying them
-        chunker_model: Model to use for chunking
-        chunker_temperature: Temperature for chunking model
-        entitizer_model: Model to use for entitizing
-        entitizer_temperature: Temperature for entitizing model
-        orator_model: Model to use for orating
-        orator_temperature: Temperature for orating model
-        orator_all_steps: Whether to run all orator steps
-        orator_sentences: Whether to run sentence enhancement
-        orator_words: Whether to run word enhancement
-        orator_punctuation: Whether to run punctuation enhancement
-        orator_emotions: Whether to run emotion enhancement
-        tonedown_model: Model to use for toning down
-        tonedown_temperature: Temperature for toning down model
-        min_em_distance: Minimum distance between emphasis marks
-        dialog_mode: Whether to process as dialog
-        plaintext_mode: Whether to process as plain text
-        verbose: Whether to enable verbose logging
-        debug: Whether to enable debug logging
-
-    Returns:
-        Path to final output file
-    """
+    """Run the complete e11ocutionist pipeline."""
     _configure_logging(debug, verbose)
 
     # Validate input file exists
@@ -1693,6 +1664,10 @@ def process(  # noqa: PLR0913
     if not input_path.exists():
         msg = "Input file not found"
         raise FileNotFoundError(msg)
+
+    # Validate output directory if provided
+    if output_dir is not None:
+        _validate_output_dir(output_dir)
 
     # Map step name to enum
     try:
@@ -1756,7 +1731,7 @@ import json
 import shutil
 import datetime
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -1979,7 +1954,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running chunking step")
 
-        step_name = ProcessingStep.CHUNKING.value
         input_file = self.config.input_file
         output_file = self.config.output_dir / f"{input_file.stem}_step1_chunked.xml"
 
@@ -1988,7 +1962,7 @@ class E11ocutionistPipeline:
 
         # Run the chunking process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.chunker_model,
@@ -2058,7 +2032,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running orating step")
 
-        step_name = ProcessingStep.ORATING.value
         prev_step = ProcessingStep.ENTITIZING.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
@@ -2092,7 +2065,7 @@ class E11ocutionistPipeline:
 
         # Run the orating process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.orator_model,
@@ -2118,7 +2091,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running toning down step")
 
-        step_name = ProcessingStep.TONING_DOWN.value
         prev_step = ProcessingStep.ORATING.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
@@ -2145,7 +2117,7 @@ class E11ocutionistPipeline:
                 else {}
             )
 
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.tonedown_model,
@@ -2170,7 +2142,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running ElevenLabs conversion step")
 
-        step_name = ProcessingStep.ELEVENLABS_CONVERSION.value
         prev_step = ProcessingStep.TONING_DOWN.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
@@ -2190,7 +2161,7 @@ class E11ocutionistPipeline:
 
         # Run the ElevenLabs conversion process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 dialog=self.config.dialog_mode,
@@ -2239,8 +2210,7 @@ def main() -> None:
             debug=False,
         )
         pipeline = E11ocutionistPipeline(config)
-        final_output = pipeline.run()
-        print(f"Final output: {final_output}")
+        pipeline.run()
     except Exception as e:
         logger.error("An error occurred: %s", str(e))
         raise
@@ -2457,11 +2427,9 @@ personal ElevenLabs voices and save the result as audio files.
 
 import os
 import re
-from typing import Any
 import backoff
 from tenacity import retry, stop_after_attempt, wait_exponential
 from loguru import logger
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from pathlib import Path
 
 try:
@@ -2609,7 +2577,7 @@ def synthesize_with_all_voices(
     verbose: bool = False,
 ) -> str:
     """Synthesize text with all available voices."""
-    if not api_key:
+    if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
         msg = "ElevenLabs API key not provided"
         raise ValueError(msg)
 
@@ -3920,7 +3888,6 @@ pronunciation cues and reducing excessive emphasis.
 """
 
 import json
-from typing import Any
 from loguru import logger
 from lxml import etree
 from dotenv import load_dotenv

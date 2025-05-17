@@ -159,7 +159,7 @@ def synthesize_with_all_voices(
     verbose: bool = False,
 ) -> str:
     """Synthesize text with all available voices."""
-    if not api_key:
+    if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
         msg = "ElevenLabs API key not provided"
         raise ValueError(msg)
 

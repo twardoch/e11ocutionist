@@ -162,13 +162,9 @@ def test_orate_command(
         output_file=sample_output_file,
         model="gpt-4",
         temperature=0.7,
-        all_steps=True,
-        sentences=True,
-        words=True,
-        punctuation=True,
-        emotions=True,
-        verbose=True,
         steps=["--all_steps"],
+        backup=True,
+        verbose=True,
     )
     assert result == sample_output_file
 
@@ -312,7 +308,7 @@ def test_say_command_missing_input():
 def test_say_command_missing_api_key(sample_output_dir):
     """Test say command with no API key provided."""
     with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
-        say(text="Hello", output_dir=sample_output_dir)
+        say(text="Hello", output_dir=sample_output_dir, api_key=None)
 
 
 @patch.dict(os.environ, {"ELEVENLABS_API_KEY": "test_key"})
@@ -332,7 +328,7 @@ def test_say_command_env_api_key(mock_synthesize, sample_output_dir):
 @patch("loguru.logger.add")
 def test_debug_logging_configuration(mock_add, mock_remove):
     """Test debug logging configuration."""
-    result = chunk("input.txt", "output.xml", debug=True)
+    chunk("input.txt", "output.xml", debug=True)
     mock_remove.assert_called_once()
     mock_add.assert_called_once()
     assert mock_add.call_args.kwargs["level"] == "DEBUG"
@@ -342,7 +338,7 @@ def test_debug_logging_configuration(mock_add, mock_remove):
 @patch("loguru.logger.add")
 def test_verbose_logging_configuration(mock_add, mock_remove):
     """Test verbose logging configuration."""
-    result = chunk("input.txt", "output.xml", verbose=True)
+    chunk("input.txt", "output.xml", verbose=True)
     mock_remove.assert_called_once()
     mock_add.assert_called_once()
     assert mock_add.call_args.kwargs["level"] == "INFO"

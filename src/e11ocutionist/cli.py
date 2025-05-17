@@ -188,17 +188,12 @@ def orate(
             output_file=output_file,
             model=model,
             temperature=temperature,
-            all_steps=all_steps,
-            sentences=sentences,
-            words=words,
-            punctuation=punctuation,
-            emotions=emotions,
-            verbose=verbose,
-            backup=backup,
             steps=steps,
+            backup=backup,
+            verbose=verbose,
         )
         logger.info(f"Orating completed: {result}")
-        return result
+        return output_file
     except Exception as e:
         logger.error(f"Processing failed: {e}")
         raise
@@ -374,36 +369,7 @@ def process(  # noqa: PLR0913
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the complete e11ocutionist pipeline.
-
-    Args:
-        input_file: Path to input file
-        output_dir: Path to output directory (optional)
-        start_step: Step to start from (chunking, entitizing, orating, toning_down, elevenlabs_conversion)
-        force_restart: Whether to force restart from the specified step
-        backup: Whether to create backups of files before modifying them
-        chunker_model: Model to use for chunking
-        chunker_temperature: Temperature for chunking model
-        entitizer_model: Model to use for entitizing
-        entitizer_temperature: Temperature for entitizing model
-        orator_model: Model to use for orating
-        orator_temperature: Temperature for orating model
-        orator_all_steps: Whether to run all orator steps
-        orator_sentences: Whether to run sentence enhancement
-        orator_words: Whether to run word enhancement
-        orator_punctuation: Whether to run punctuation enhancement
-        orator_emotions: Whether to run emotion enhancement
-        tonedown_model: Model to use for toning down
-        tonedown_temperature: Temperature for toning down model
-        min_em_distance: Minimum distance between emphasis marks
-        dialog_mode: Whether to process as dialog
-        plaintext_mode: Whether to process as plain text
-        verbose: Whether to enable verbose logging
-        debug: Whether to enable debug logging
-
-    Returns:
-        Path to final output file
-    """
+    """Run the complete e11ocutionist pipeline."""
     _configure_logging(debug, verbose)
 
     # Validate input file exists
@@ -411,6 +377,10 @@ def process(  # noqa: PLR0913
     if not input_path.exists():
         msg = "Input file not found"
         raise FileNotFoundError(msg)
+
+    # Validate output directory if provided
+    if output_dir is not None:
+        _validate_output_dir(output_dir)
 
     # Map step name to enum
     try:
