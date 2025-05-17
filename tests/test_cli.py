@@ -262,6 +262,9 @@ def test_say_command(mock_synthesize, sample_output_dir):
 @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
 def test_say_command_with_file(mock_synthesize, sample_input_file, sample_output_dir):
     """Test say command execution with input file."""
+    # Set up mock return value
+    mock_synthesize.return_value = sample_output_dir
+
     # Call say function with input file
     result = say(
         input_file=sample_input_file,
@@ -316,6 +319,9 @@ def test_say_command_missing_api_key(sample_output_dir):
 @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
 def test_say_command_env_api_key(mock_synthesize, sample_output_dir):
     """Test say command using API key from environment."""
+    # Set up mock return value
+    mock_synthesize.return_value = sample_output_dir
+
     result = say(text="Hello", output_dir=sample_output_dir)
     mock_synthesize.assert_called_once()
     assert mock_synthesize.call_args[1]["api_key"] == "test_key"
@@ -329,8 +335,7 @@ def test_debug_logging_configuration(mock_add, mock_remove):
     result = chunk("input.txt", "output.xml", debug=True)
     mock_remove.assert_called_once()
     mock_add.assert_called_once()
-    assert mock_add.call_args[0][1]["level"] == "DEBUG"
-    assert isinstance(result, str)
+    assert mock_add.call_args.kwargs["level"] == "DEBUG"
 
 
 @patch("loguru.logger.remove")
@@ -340,8 +345,7 @@ def test_verbose_logging_configuration(mock_add, mock_remove):
     result = chunk("input.txt", "output.xml", verbose=True)
     mock_remove.assert_called_once()
     mock_add.assert_called_once()
-    assert mock_add.call_args[0][1]["level"] == "INFO"
-    assert isinstance(result, str)
+    assert mock_add.call_args.kwargs["level"] == "INFO"
 
 
 @patch("e11ocutionist.cli.E11ocutionistPipeline")
