@@ -4,7 +4,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+import sys
 
 from loguru import logger
 
@@ -17,6 +17,11 @@ from e11ocutionist import (
     orator,
     tonedown,
 )
+from e11ocutionist.e11ocutionist import (
+    E11ocutionistPipeline,
+    PipelineConfig,
+    ProcessingStep,
+)
 
 VALID_MODELS = ["gpt-4", "gpt-3.5-turbo"]
 
@@ -24,34 +29,61 @@ VALID_MODELS = ["gpt-4", "gpt-3.5-turbo"]
 def _configure_logging(debug: bool = False, verbose: bool = False) -> None:
     """Configure logging based on debug and verbose flags."""
     logger.remove()  # Remove default handler
-    level = "DEBUG" if debug else "INFO" if verbose else "WARNING"
-    logger.add(sink=lambda msg: print(msg), level=level)
+
+    if debug:
+        logger.add(
+            sys.stdout,
+            level="DEBUG",
+            format=(
+                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                "<level>{level: <8}</level> | "
+                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+                "<level>{message}</level>"
+            ),
+        )
+    elif verbose:
+        logger.add(
+            sys.stdout,
+            level="INFO",
+            format=(
+                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                "<level>{level: <8}</level> | "
+                "<level>{message}</level>"
+            ),
+        )
+    else:
+        logger.add(
+            sys.stdout,
+            level="WARNING",
+            format="<level>{message}</level>",
+        )
 
 
 def _validate_temperature(temperature: float) -> None:
     """Validate temperature value."""
     if not 0 <= temperature <= 1:
-        raise ValueError("Temperature must be between 0 and 1")
+        msg = "Temperature must be between 0 and 1"
+        raise ValueError(msg)
 
 
 def _validate_model(model: str) -> None:
     """Validate model name."""
     if model not in VALID_MODELS:
-        valid_models = ", ".join(VALID_MODELS)
-        msg = f"Invalid model name. Must be one of: {valid_models}"
+        msg = f"Invalid model name. Must be one of: {', '.join(VALID_MODELS)}"
         raise ValueError(msg)
 
 
 def _validate_min_distance(min_distance: int) -> None:
     """Validate minimum emphasis distance."""
     if min_distance <= 0:
-        raise ValueError("Minimum emphasis distance must be positive")
+        msg = "Minimum emphasis distance must be positive"
+        raise ValueError(msg)
 
 
-def _validate_output_dir(output_dir: str) -> None:
+def _validate_output_dir(output_dir: str | Path) -> None:
     """Validate output directory."""
-    path = Path(output_dir)
-    if path.exists() and not path.is_dir():
+    output_dir = Path(output_dir)
+    if output_dir.exists() and not output_dir.is_dir():
         msg = f"{output_dir} exists and is not a directory"
         raise NotADirectoryError(msg)
 
@@ -61,11 +93,10 @@ def chunk(
     output_file: str,
     model: str = "gpt-4",
     temperature: float = 0.2,
-    chunk_size: int = 12288,
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Chunk text into semantic units."""
+    """Run the chunking step."""
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
@@ -75,18 +106,17 @@ def chunk(
     logger.info(f"Output: {output_file}")
 
     try:
-        chunker.process_document(
+        result = chunker.process_document(
             input_file=input_file,
             output_file=output_file,
             model=model,
             temperature=temperature,
-            chunk_size=chunk_size,
             verbose=verbose,
         )
         logger.info(f"Chunking completed: {output_file}")
         return output_file
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Processing failed: {e}")
         raise
 
 
@@ -94,11 +124,11 @@ def entitize(
     input_file: str,
     output_file: str,
     model: str = "gpt-4",
-    temperature: float = 0.2,
+    temperature: float = 0.1,
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Process named entities in text."""
+    """Run the entitizing step."""
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
@@ -108,7 +138,7 @@ def entitize(
     logger.info(f"Output: {output_file}")
 
     try:
-        entitizer.process_document(
+        result = entitizer.process_document(
             input_file=input_file,
             output_file=output_file,
             model=model,
@@ -118,7 +148,7 @@ def entitize(
         logger.info(f"Entitizing completed: {output_file}")
         return output_file
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Processing failed: {e}")
         raise
 
 
@@ -127,21 +157,22 @@ def orate(
     output_file: str,
     model: str = "gpt-4",
     temperature: float = 0.7,
-    all_steps: bool = False,
-    sentences: bool = False,
-    words: bool = False,
-    punctuation: bool = False,
-    emotions: bool = False,
+    all_steps: bool = True,
+    sentences: bool = True,
+    words: bool = True,
+    punctuation: bool = True,
+    emotions: bool = True,
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Process text for speech synthesis."""
+    """Run the orating step."""
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
 
     if not any([all_steps, sentences, words, punctuation, emotions]):
-        raise ValueError("At least one processing step must be selected")
+        msg = "At least one processing step must be selected"
+        raise ValueError(msg)
 
     logger.info("Running orating step:")
     logger.info(f"Input: {input_file}")
@@ -160,7 +191,7 @@ def orate(
         steps.append("--emotions")
 
     try:
-        orator.process_document(
+        result = orator.process_document(
             input_file=input_file,
             output_file=output_file,
             model=model,
@@ -171,7 +202,7 @@ def orate(
         logger.info(f"Orating completed: {output_file}")
         return output_file
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Processing failed: {e}")
         raise
 
 
@@ -184,18 +215,18 @@ def tone_down(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Tone down emphasis in text."""
+    """Run the tone down step."""
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
     _validate_min_distance(min_em_distance)
 
-    logger.info("Running toning down step:")
+    logger.info("Running tone down step:")
     logger.info(f"Input: {input_file}")
     logger.info(f"Output: {output_file}")
 
     try:
-        tonedown.process_document(
+        result = tonedown.process_document(
             input_file=input_file,
             output_file=output_file,
             model=model,
@@ -203,10 +234,10 @@ def tone_down(
             min_emphasis_distance=min_em_distance,
             verbose=verbose,
         )
-        logger.info(f"Toning down completed: {output_file}")
+        logger.info(f"Tone down completed: {output_file}")
         return output_file
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Processing failed: {e}")
         raise
 
 
@@ -222,7 +253,8 @@ def convert_11labs(
     _configure_logging(debug, verbose)
 
     if dialog and plaintext:
-        raise ValueError("Cannot enable both dialog and plaintext modes")
+        msg = "Cannot enable both dialog and plaintext modes"
+        raise ValueError(msg)
 
     logger.info("Running ElevenLabs conversion step:")
     logger.info(f"Input: {input_file}")
@@ -239,15 +271,15 @@ def convert_11labs(
         logger.info(f"ElevenLabs conversion completed: {output_file}")
         return output_file
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error: {e!s}")
         raise
 
 
 def say(
-    text: Optional[str] = None,
-    input_file: Optional[str] = None,
+    text: str | None = None,
+    input_file: str | None = None,
     output_dir: str = "output",
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     model_id: str = "eleven_multilingual_v2",
     output_format: str = "mp3_44100_128",
     verbose: bool = False,
@@ -258,34 +290,37 @@ def say(
     _validate_output_dir(output_dir)
 
     if text is not None and input_file is not None:
-        raise ValueError("Cannot provide both text and input file")
+        msg = "Cannot provide both text and input file"
+        raise ValueError(msg)
 
     if text is None and input_file is not None:
         with open(input_file, encoding="utf-8") as f:
             text = f.read()
     elif text is None:
-        raise ValueError("Either text or input_file must be provided")
+        msg = "Either 'text' or 'input_file' must be provided"
+        raise ValueError(msg)
 
-    if api_key is None:
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if not api_key:
-            raise ValueError("ElevenLabs API key not provided")
+    # Get API key from environment if not provided
+    api_key = api_key or os.getenv("ELEVENLABS_API_KEY")
+    if not api_key:
+        msg = "ElevenLabs API key not provided"
+        raise ValueError(msg)
 
     logger.info("Running speech synthesis:")
     logger.info(f"Output directory: {output_dir}")
 
     try:
         synthesizer.synthesize_with_all_voices(
-            text=text,  # type: ignore
+            text=text,
             output_dir=output_dir,
             api_key=api_key,
             model_id=model_id,
             output_format=output_format,
         )
-        logger.info(f"Synthesis completed: {output_dir}")
+        logger.info(f"Speech synthesis completed: {output_dir}")
         return output_dir
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Processing failed: {e}")
         raise
 
 
@@ -299,7 +334,8 @@ def fix_nei(
     _configure_logging(debug, verbose)
 
     if input_file == output_file:
-        raise ValueError("Input and output files must be different")
+        msg = "Input and output files must be different"
+        raise ValueError(msg)
 
     logger.info("Running NEI fixing step:")
     logger.info(f"Input: {input_file}")
@@ -313,5 +349,114 @@ def fix_nei(
         logger.info(f"NEI fixing completed: {output_file}")
         return output_file
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error: {e!s}")
         raise
+
+
+def process(  # noqa: PLR0913
+    input_file: str,
+    output_dir: str | None = None,
+    start_step: str = "chunking",
+    force_restart: bool = False,
+    backup: bool = False,
+    chunker_model: str = "gpt-4",
+    chunker_temperature: float = 0.2,
+    entitizer_model: str = "gpt-4",
+    entitizer_temperature: float = 0.1,
+    orator_model: str = "gpt-4",
+    orator_temperature: float = 0.7,
+    orator_all_steps: bool = True,
+    orator_sentences: bool = False,
+    orator_words: bool = False,
+    orator_punctuation: bool = False,
+    orator_emotions: bool = False,
+    tonedown_model: str = "gpt-4",
+    tonedown_temperature: float = 0.1,
+    min_em_distance: int | None = 5,
+    dialog_mode: bool = True,
+    plaintext_mode: bool = False,
+    verbose: bool = False,
+    debug: bool = False,
+) -> str:
+    """Run the complete e11ocutionist pipeline.
+
+    Args:
+        input_file: Path to input file
+        output_dir: Path to output directory (optional)
+        start_step: Step to start from (chunking, entitizing, orating, toning_down, elevenlabs_conversion)
+        force_restart: Whether to force restart from the specified step
+        backup: Whether to create backups of files before modifying them
+        chunker_model: Model to use for chunking
+        chunker_temperature: Temperature for chunking model
+        entitizer_model: Model to use for entitizing
+        entitizer_temperature: Temperature for entitizing model
+        orator_model: Model to use for orating
+        orator_temperature: Temperature for orating model
+        orator_all_steps: Whether to run all orator steps
+        orator_sentences: Whether to run sentence enhancement
+        orator_words: Whether to run word enhancement
+        orator_punctuation: Whether to run punctuation enhancement
+        orator_emotions: Whether to run emotion enhancement
+        tonedown_model: Model to use for toning down
+        tonedown_temperature: Temperature for toning down model
+        min_em_distance: Minimum distance between emphasis marks
+        dialog_mode: Whether to process as dialog
+        plaintext_mode: Whether to process as plain text
+        verbose: Whether to enable verbose logging
+        debug: Whether to enable debug logging
+
+    Returns:
+        Path to final output file
+    """
+    _configure_logging(debug, verbose)
+
+    # Validate input file exists
+    input_path = Path(input_file)
+    if not input_path.exists():
+        msg = "Input file not found"
+        raise FileNotFoundError(msg)
+
+    # Map step name to enum
+    try:
+        start_step_enum = ProcessingStep[start_step.upper()]
+    except KeyError as e:
+        msg = f"Invalid start_step: {start_step}. Must be one of: {', '.join(step.name.lower() for step in ProcessingStep)}"
+        raise ValueError(msg) from e
+
+    # Create pipeline config
+    config = PipelineConfig(
+        input_file=input_path,
+        output_dir=Path(output_dir) if output_dir else None,
+        start_step=start_step_enum,
+        force_restart=force_restart,
+        backup=backup,
+        chunker_model=chunker_model,
+        chunker_temperature=chunker_temperature,
+        entitizer_model=entitizer_model,
+        entitizer_temperature=entitizer_temperature,
+        orator_model=orator_model,
+        orator_temperature=orator_temperature,
+        orator_all_steps=orator_all_steps,
+        orator_sentences=orator_sentences,
+        orator_words=orator_words,
+        orator_punctuation=orator_punctuation,
+        orator_emotions=orator_emotions,
+        tonedown_model=tonedown_model,
+        tonedown_temperature=tonedown_temperature,
+        min_em_distance=min_em_distance,
+        dialog_mode=dialog_mode,
+        plaintext_mode=plaintext_mode,
+        verbose=verbose,
+        debug=debug,
+    )
+
+    # Run pipeline
+    pipeline = E11ocutionistPipeline(config)
+    result = pipeline.run()
+
+    # Return path to final output file
+    return str(
+        result["final_output_file"]
+        if "final_output_file" in result
+        else config.output_dir
+    )

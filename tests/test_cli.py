@@ -3,11 +3,9 @@
 """Tests for the CLI module."""
 
 import os
-from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
-from loguru import logger
 
 from e11ocutionist.cli import (
     chunk,

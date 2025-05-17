@@ -21,14 +21,14 @@ from loguru import logger
 
 
 # Define processing steps as an enum
-class ProcessingStep(Enum):
-    """Processing steps in the e11ocutionist pipeline."""
+class ProcessingStep(str, Enum):
+    """Pipeline processing steps."""
 
-    CHUNKING = auto()
-    ENTITIZING = auto()
-    ORATING = auto()
-    TONING_DOWN = auto()
-    ELEVENLABS_CONVERSION = auto()
+    CHUNKING = "chunking"
+    ENTITIZING = "entitizing"
+    ORATING = "orating"
+    TONING_DOWN = "toning_down"
+    ELEVENLABS_CONVERSION = "elevenlabs_conversion"
 
 
 @dataclass
@@ -111,40 +111,37 @@ class E11ocutionistPipeline:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             self.config.output_dir = Path(f"{input_stem}_{timestamp}")
 
+        # Create output directory if it doesn't exist
         self.config.output_dir.mkdir(parents=True, exist_ok=True)
         self.progress_file = self.config.output_dir / "progress.json"
 
         logger.info(f"Output directory: {self.config.output_dir}")
 
-        # Initialize or load progress
-        self._load_progress()
+        # Initialize progress file if it doesn't exist or force_restart is True
+        if not self.progress_file.exists() or self.config.force_restart:
+            self.progress = {}
+            self.progress_file.write_text("")  # Empty file
+        else:
+            self._load_progress()
 
     def _load_progress(self) -> None:
-        """Load progress from the progress file if it exists."""
-        if (
-            self.progress_file
-            and self.progress_file.exists()
-            and not self.config.force_restart
-        ):
-            try:
-                with open(self.progress_file) as f:
-                    self.progress = json.load(f)
-                logger.info(f"Loaded progress from {self.progress_file}")
-            except Exception as e:
-                logger.error(f"Error loading progress: {e}")
+        """Load progress from file."""
+        try:
+            content = self.progress_file.read_text()
+            if content:
+                self.progress = json.loads(content)
+            else:
                 self.progress = {}
-        else:
+        except json.JSONDecodeError:
             self.progress = {}
 
     def _save_progress(self) -> None:
-        """Save progress to the progress file."""
-        if self.progress_file:
-            try:
-                with open(self.progress_file, "w") as f:
-                    json.dump(self.progress, f, indent=2)
-                logger.debug(f"Saved progress to {self.progress_file}")
-            except Exception as e:
-                logger.error(f"Error saving progress: {e}")
+        """Save progress to file."""
+        with self.progress_file.open("w") as f:
+            if self.progress:
+                json.dump(self.progress, f)
+            else:
+                f.write("")  # Empty file
 
     def _create_backup(self, file_path: Path) -> None:
         """Create a backup of the specified file.
@@ -152,96 +149,59 @@ class E11ocutionistPipeline:
         Args:
             file_path: Path to the file to back up
         """
-        if self.config.backup and file_path.exists():
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = file_path.with_name(
-                f"{file_path.stem}_{timestamp}{file_path.suffix}"
-            )
+        if not self.config.backup or not file_path.exists():
+            return
+
+        backup_path = file_path.with_suffix(file_path.suffix + ".bak")
+        try:
             shutil.copy2(file_path, backup_path)
             logger.debug(f"Created backup: {backup_path}")
+        except Exception as e:
+            logger.error(f"Error creating backup: {e}")
+            raise
 
-    def run(self) -> dict[str, Any]:
-        """Run the e11ocutionist pipeline.
-
-        Returns:
-            Dictionary with processing results and summary
-        """
-        logger.info("Starting e11ocutionist pipeline")
-
-        # Track what steps were executed in this run
-        executed_steps = []
-
-        # Process each step sequentially
-        if self._should_run_step(ProcessingStep.CHUNKING):
-            self._run_chunking()
-            executed_steps.append("chunking")
-
-        if self._should_run_step(ProcessingStep.ENTITIZING):
-            self._run_entitizing()
-            executed_steps.append("entitizing")
-
-        if self._should_run_step(ProcessingStep.ORATING):
-            self._run_orating()
-            executed_steps.append("orating")
-
-        if self._should_run_step(ProcessingStep.TONING_DOWN):
-            self._run_toning_down()
-            executed_steps.append("toning_down")
-
-        if self._should_run_step(ProcessingStep.ELEVENLABS_CONVERSION):
-            self._run_elevenlabs_conversion()
-            executed_steps.append("elevenlabs_conversion")
-
-        # Create summary
-        summary = {
-            "input_file": str(self.config.input_file),
-            "output_dir": str(self.config.output_dir),
-            "executed_steps": executed_steps,
-            "progress": self.progress,
-        }
-
-        # Save summary to file
-        summary_file = self.config.output_dir / "_summary.txt"
-        with open(summary_file, "w") as f:
-            f.write("E11ocutionist Pipeline Summary\n")
-            f.write("============================\n\n")
-            f.write(f"Input file: {self.config.input_file}\n")
-            f.write(f"Output directory: {self.config.output_dir}\n\n")
-            f.write(f"Executed steps: {', '.join(executed_steps)}\n\n")
-            f.write("Step details:\n")
-            for step, details in self.progress.items():
-                if isinstance(details, dict):
-                    f.write(f"  {step}:\n")
-                    for key, value in details.items():
-                        f.write(f"    {key}: {value}\n")
-                else:
-                    f.write(f"  {step}: {details}\n")
-
-        logger.info(f"Pipeline completed. Summary saved to {summary_file}")
-        return summary
-
-    def _should_run_step(self, step: ProcessingStep) -> bool:
-        """Determine if a step should be run based on start_step and progress.
+    def _update_progress(
+        self, step: ProcessingStep, output_file: str | Path, completed: bool = True
+    ) -> None:
+        """Update progress for a step.
 
         Args:
-            step: The step to check
-
-        Returns:
-            True if the step should be run, False otherwise
+            step: The processing step that was completed
+            output_file: Path to the output file from this step
+            completed: Whether the step completed successfully
         """
-        # If force_restart, always run if step is at or after start_step
-        if self.config.force_restart:
-            return step.value >= self.config.start_step.value
+        step_name = step.value
+        self.progress[step_name] = {
+            "completed": completed,
+            "output_file": str(output_file),
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
+        self._save_progress()
 
-        # Otherwise, check if step is completed in progress
-        step_name = step.name.lower()
-        if step_name in self.progress and self.progress[step_name].get(
-            "completed", False
-        ):
-            return False
+    def run(self) -> None:
+        """Run the pipeline."""
+        try:
+            self._setup_output_directory()
 
-        # If step is at or after start_step, run it
-        return step.value >= self.config.start_step.value
+            # If force_restart, clear progress
+            if self.config.force_restart:
+                self.progress = {}
+                self._save_progress()
+
+            # Run steps based on start_step
+            start_step_found = False
+            for step in ProcessingStep:
+                if step == self.config.start_step:
+                    start_step_found = True
+
+                if start_step_found:
+                    step_method = getattr(self, f"_run_{step.value}")
+                    step_method()
+
+            logger.info("Pipeline completed successfully")
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+            raise
 
     def _run_chunking(self) -> None:
         """Run the chunking step."""
@@ -249,7 +209,7 @@ class E11ocutionistPipeline:
 
         logger.info("Running chunking step")
 
-        step_name = ProcessingStep.CHUNKING.name.lower()
+        step_name = ProcessingStep.CHUNKING.value
         input_file = self.config.input_file
         output_file = self.config.output_dir / f"{input_file.stem}_step1_chunked.xml"
 
@@ -268,27 +228,13 @@ class E11ocutionistPipeline:
             )
 
             # Update progress
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": True,
-                "result": result,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.CHUNKING, output_file)
 
             logger.info(f"Chunking completed: {output_file}")
 
         except Exception as e:
             logger.error(f"Error in chunking step: {e}")
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": False,
-                "error": str(e),
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.CHUNKING, output_file)
             raise
 
     def _run_entitizing(self) -> None:
@@ -297,58 +243,43 @@ class E11ocutionistPipeline:
 
         logger.info("Running entitizing step")
 
-        step_name = ProcessingStep.ENTITIZING.name.lower()
-        prev_step = ProcessingStep.CHUNKING.name.lower()
+        step_name = ProcessingStep.ENTITIZING.value
+        prev_step = ProcessingStep.CHUNKING.value
 
-        if prev_step in self.progress and self.progress[prev_step].get(
+        # Check if previous step is completed
+        if prev_step not in self.progress or not self.progress[prev_step].get(
             "completed", False
         ):
-            input_file = Path(self.progress[prev_step]["output_file"])
+            if self.config.start_step.value == step_name:
+                # If starting from this step, use input file
+                input_file = self.config.input_file
+            else:
+                msg = (
+                    f"Cannot run {step_name}: previous step ({prev_step}) not completed"
+                )
+                raise ValueError(msg)
         else:
-            msg = "Cannot run entitizing: previous step (chunking) not completed"
-            raise ValueError(msg)
+            input_file = Path(self.progress[prev_step]["output_file"])
 
-        output_file = (
-            self.config.output_dir
-            / f"{self.config.input_file.stem}_step2_entitized.xml"
-        )
+        output_file = self.config.output_dir / f"{step_name}_output.xml"
 
-        # Create backup if needed
-        self._create_backup(output_file)
-
-        # Run the entitizing process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.entitizer_model,
                 temperature=self.config.entitizer_temperature,
                 verbose=self.config.verbose,
-                backup=self.config.backup,
             )
 
-            # Update progress
             self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
                 "completed": True,
-                "result": result,
+                "output_file": str(output_file),
             }
             self._save_progress()
-
-            logger.info(f"Entitizing completed: {output_file}")
 
         except Exception as e:
-            logger.error(f"Error in entitizing step: {e}")
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": False,
-                "error": str(e),
-            }
-            self._save_progress()
+            logger.error(f"Error in {step_name} step: {e}")
             raise
 
     def _run_orating(self) -> None:
@@ -357,8 +288,8 @@ class E11ocutionistPipeline:
 
         logger.info("Running orating step")
 
-        step_name = ProcessingStep.ORATING.name.lower()
-        prev_step = ProcessingStep.ENTITIZING.name.lower()
+        step_name = ProcessingStep.ORATING.value
+        prev_step = ProcessingStep.ENTITIZING.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
             "completed", False
@@ -402,29 +333,13 @@ class E11ocutionistPipeline:
             )
 
             # Update progress
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": True,
-                "result": result,
-                "steps": steps,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.ORATING, output_file)
 
             logger.info(f"Orating completed: {output_file}")
 
         except Exception as e:
             logger.error(f"Error in orating step: {e}")
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": False,
-                "error": str(e),
-                "steps": steps,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.ORATING, output_file)
             raise
 
     def _run_toning_down(self) -> None:
@@ -433,8 +348,8 @@ class E11ocutionistPipeline:
 
         logger.info("Running toning down step")
 
-        step_name = ProcessingStep.TONING_DOWN.name.lower()
-        prev_step = ProcessingStep.ORATING.name.lower()
+        step_name = ProcessingStep.TONING_DOWN.value
+        prev_step = ProcessingStep.ORATING.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
             "completed", False
@@ -470,29 +385,13 @@ class E11ocutionistPipeline:
             )
 
             # Update progress
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": True,
-                "result": result,
-                "em_min_distance": self.config.min_em_distance,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.TONING_DOWN, output_file)
 
             logger.info(f"Toning down completed: {output_file}")
 
         except Exception as e:
             logger.error(f"Error in toning down step: {e}")
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": False,
-                "error": str(e),
-                "em_min_distance": self.config.min_em_distance,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.TONING_DOWN, output_file)
             raise
 
     def _run_elevenlabs_conversion(self) -> None:
@@ -501,8 +400,8 @@ class E11ocutionistPipeline:
 
         logger.info("Running ElevenLabs conversion step")
 
-        step_name = ProcessingStep.ELEVENLABS_CONVERSION.name.lower()
-        prev_step = ProcessingStep.TONING_DOWN.name.lower()
+        step_name = ProcessingStep.ELEVENLABS_CONVERSION.value
+        prev_step = ProcessingStep.TONING_DOWN.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
             "completed", False
@@ -530,31 +429,13 @@ class E11ocutionistPipeline:
             )
 
             # Update progress
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": True,
-                "result": result,
-                "dialog": self.config.dialog_mode,
-                "plaintext": self.config.plaintext_mode,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.ELEVENLABS_CONVERSION, output_file)
 
             logger.info(f"ElevenLabs conversion completed: {output_file}")
 
         except Exception as e:
             logger.error(f"Error in ElevenLabs conversion step: {e}")
-            self.progress[step_name] = {
-                "input_file": str(input_file),
-                "output_file": str(output_file),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "completed": False,
-                "error": str(e),
-                "dialog": self.config.dialog_mode,
-                "plaintext": self.config.plaintext_mode,
-            }
-            self._save_progress()
+            self._update_progress(ProcessingStep.ELEVENLABS_CONVERSION, output_file)
             raise
 
 
@@ -588,9 +469,7 @@ def main() -> None:
             debug=False,
         )
         pipeline = E11ocutionistPipeline(config)
-        result = pipeline.run()
-        logger.info("Processing completed: %s", result)
-
+        pipeline.run()
     except Exception as e:
         logger.error("An error occurred: %s", str(e))
         raise
