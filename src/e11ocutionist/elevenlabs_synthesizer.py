@@ -87,7 +87,14 @@ def get_personal_voices(api_key: str | None) -> list[Voice]:
 
     Returns:
         List of Voice objects
+
+    Raises:
+        ValueError: If API key is not provided
     """
+    if not api_key:
+        msg = "ElevenLabs API key not provided"
+        raise ValueError(msg)
+
     set_api_key(api_key)
 
     # Get all voices

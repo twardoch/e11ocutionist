@@ -5484,6 +5484,3789 @@ continue
 
 _**Assistant**_
 
+I see that all the tests are now passing, but we have some linter errors to fix. Let me address them one by one:
+
+1. First, let's fix the line length issues in `tests/test_cli.py`:
+
+---
+
+```diff
+  
+  @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+- def test_say_command_with_file(mock_synthesize, sample_input_file, sample_output_dir):
++ def test_say_command_with_file(
++     mock_synthesize,
++     sample_input_file,
++     sample_output_dir,
++ ):
+      """Test say command execution with input file."""
+      # Set up mock return value
+```
+
+```diff
+  
+  @patch("e11ocutionist.chunker.process_document")
+- def test_chunk_command_with_invalid_model(mock_process_document, sample_input_file):
++ def test_chunk_command_with_invalid_model(
++     mock_process_document,
++     sample_input_file,
++ ):
+      """Test chunk command with invalid model name."""
+      with pytest.raises(ValueError, match="Invalid model name"):
+```
+
+```diff
+  
+  @patch("e11ocutionist.orator.process_document")
+- def test_orate_command_no_steps_selected(mock_process_document, sample_input_file):
++ def test_orate_command_no_steps_selected(
++     mock_process_document,
++     sample_input_file,
++ ):
+      """Test orate command when no processing steps are selected."""
+      with pytest.raises(
+```
+
+```diff
+  @patch("e11ocutionist.elevenlabs_converter.process_document")
+  def test_convert_11labs_command_with_both_modes(
+-     mock_process_document, sample_input_file
++     mock_process_document,
++     sample_input_file,
+  ):
+-     """Test convert_11labs command with both dialog and plaintext modes enabled."""
++     """Test convert_11labs command with both dialog and plaintext modes."""
+      with pytest.raises(
+          ValueError, match="Cannot enable both dialog and plaintext modes"
+```
+
+```diff
+  
+  @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+- def test_say_command_with_both_inputs(mock_synthesize, sample_input_file):
++ def test_say_command_with_both_inputs(
++     mock_synthesize,
++     sample_input_file,
++ ):
+      """Test say command with both text and input file provided."""
+      with pytest.raises(ValueError, match="Cannot provide both text and input file"):
+```
+
+```diff
+  
+  @patch("e11ocutionist.neifix.transform_nei_content")
+- def test_neifix_command_same_input_output(mock_fix_nei, sample_input_file):
++ def test_neifix_command_same_input_output(
++     mock_fix_nei,
++     sample_input_file,
++ ):
+      """Test neifix command with same input and output file."""
+      with pytest.raises(ValueError, match="Input and output files must be different"):
+```
+
+---
+
+Let me fix the remaining line length issues in `tests/test_cli.py`:
+
+---
+
+```diff
+      """Test orate command when no processing steps are selected."""
+      with pytest.raises(
+-         ValueError, match="At least one processing step must be selected"
++         ValueError,
++         match="At least one processing step must be selected",
+      ):
+          orate(
+```
+
+```diff
+  ):
+      """Test say command with both text and input file provided."""
+-     with pytest.raises(ValueError, match="Cannot provide both text and input file"):
+-         say(text="Hello", input_file=sample_input_file, output_dir="output")
++     with pytest.raises(
++         ValueError,
++         match="Cannot provide both text and input file",
++     ):
++         say(
++             text="Hello",
++             input_file=sample_input_file,
++             output_dir="output",
++         )
+  
+  
+```
+
+```diff
+  ):
+      """Test neifix command with same input and output file."""
+-     with pytest.raises(ValueError, match="Input and output files must be different"):
++     with pytest.raises(
++         ValueError,
++         match="Input and output files must be different",
++     ):
+          fix_nei(sample_input_file, sample_input_file)
+  
+```
+
+---
+
+2. Now let's fix the type issues in `src/e11ocutionist/elevenlabs_synthesizer.py`:
+
+---
+
+```diff
+  from loguru import logger
+  from pathlib import Path
++ from typing import Any
+  
+  try:
+-     from elevenlabs import Voice, VoiceSettings, generate, set_api_key, voices
++     from elevenlabs import Voice as ElevenLabsVoice
++     from elevenlabs import VoiceSettings, generate, set_api_key, voices
+      from elevenlabs.api import Voices
+  except ImportError:
+      logger.error(
+-         "ElevenLabs API not available. Please install it with: pip install elevenlabs"
++         "ElevenLabs API not available. Install with: pip install elevenlabs"
+      )
+  
+      # Define placeholders to prevent errors
+-     class Voice:
+-         pass
++     class ElevenLabsVoice:
++         """Placeholder for ElevenLabs Voice class."""
++ 
++         def __init__(self) -> None:
++             self.name: str = ""
++             self.voice_id: str = ""
++             self.category: list[str] = []
+  
+      class VoiceSettings:
+-         pass
++         """Placeholder for ElevenLabs VoiceSettings class."""
+  
+      class Voices:
+-         pass
++         """Placeholder for ElevenLabs Voices class."""
+  
+-     def generate(*args, **kwargs):
++     def generate(*args: Any, **kwargs: Any) -> bytes:
++         """Placeholder for ElevenLabs generate function."""
+          msg = "ElevenLabs API not available"
+          raise ImportError(msg)
+  
+-     def set_api_key(*args, **kwargs):
+-         pass
++     def set_api_key(*args: Any, **kwargs: Any) -> None:
++         """Placeholder for ElevenLabs set_api_key function."""
+  
+-     def voices(*args, **kwargs):
++     def voices(*args: Any, **kwargs: Any) -> list[ElevenLabsVoice]:
++         """Placeholder for ElevenLabs voices function."""
+          return []
+  
++ # Type alias for Voice
++ Voice = ElevenLabsVoice
+  
+  def sanitize_filename(name: str) -> str:
+```
+
+```diff
+  
+  
+- @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+- def get_personal_voices(api_key: str) -> list[Voice]:
++ @retry(
++     stop=stop_after_attempt(3),
++     wait=wait_exponential(multiplier=1, min=4, max=10),
++ )
++ def get_personal_voices(api_key: str | None) -> list[Voice]:
+      """
+-     Get all personal (cloned, generated, or professional) voices from ElevenLabs.
++     Get personal (cloned, generated, or professional) voices.
+  
+      Args:
+```
+
+```diff
+      # Sanitize the voice name for filename
+      sanitized_name = sanitize_filename(voice.name)
+-     output_path = os.path.join(output_dir, f"{voice.voice_id}--{sanitized_name}.mp3")
++     output_path = os.path.join(
++         output_dir,
++         f"{voice.voice_id}--{sanitized_name}.mp3",
++     )
+  
+      # Check if file already exists
+```
+
+```diff
+      # Generate audio
+      audio = generate(
+-         text=text, voice=voice, model=model_id, output_format=output_format
++         text=text,
++         voice=voice,
++         model=model_id,
++         output_format=output_format,
+      )
+  
+```
+
+```diff
+          except Exception as e:
+              if verbose:
+-                 logger.warning(f"Failed to synthesize with voice {voice.name}: {e}")
++                 logger.warning(
++                     f"Failed to synthesize with voice {voice.name}: {e}"
++                 )
+  
+      return str(output_dir)
+```
+
+---
+
+3. Let's fix the line length issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         msg = f"Invalid start_step: {start_step}. Must be one of: {', '.join(step.name.lower() for step in ProcessingStep)}"
++         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
++         msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
+          raise ValueError(msg) from e
+  
+```
+
+```diff
+      # Return path to final output file
+      return str(
+-         result["final_output_file"]
+-         if "final_output_file" in result
+-         else config.output_dir
++         result.get("final_output_file", config.output_dir)
+      )
+  
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+  from pathlib import Path
+  import sys
++ from typing import Any
+  
+  from loguru import logger
+```
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
++         valid_steps = ", ".join(
++             step.name.lower() for step in ProcessingStep
++         )
+          msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
+          raise ValueError(msg) from e
+```
+
+```diff
+      # Run pipeline
+      pipeline = E11ocutionistPipeline(config)
+-     result = pipeline.run()
++     result: dict[str, Any] = pipeline.run()
+  
+      # Return path to final output file
+-     return str(result.get("final_output_file", config.output_dir))
++     if "final_output_file" in result:
++         return str(result["final_output_file"])
++     return str(config.output_dir)
+  
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
++         valid_steps = ", ".join(
++             step.name.lower()
++             for step in ProcessingStep
++         )
+          msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
+          raise ValueError(msg) from e
+```
+
+```diff
+      # Run pipeline
+      pipeline = E11ocutionistPipeline(config)
+-     result: dict[str, Any] = pipeline.run()
++     result = pipeline.run()
+  
+      # Return path to final output file
+-     if "final_output_file" in result:
++     if isinstance(result, dict) and "final_output_file" in result:
+          return str(result["final_output_file"])
+      return str(config.output_dir)
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+  from pathlib import Path
+  import sys
+- from typing import Any
++ from typing import Any, cast
+  
+  from loguru import logger
+```
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
+-         msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
++         valid_steps = ", ".join(
++             step.name.lower()
++             for step in ProcessingStep
++         )
++         msg = (
++             f"Invalid start_step: {start_step}. "
++             f"Must be one of: {valid_steps}"
++         )
+          raise ValueError(msg) from e
+  
+```
+
+```diff
+      # Return path to final output file
+      if isinstance(result, dict) and "final_output_file" in result:
+-         return str(result["final_output_file"])
++         return str(cast(dict[str, str], result)["final_output_file"])
+      return str(config.output_dir)
+  
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
+-         msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
++         valid_steps = ", ".join(
++             step.name.lower()
++             for step in ProcessingStep
++         )
++         msg = (
++             f"Invalid start_step: {start_step}. "
++             f"Must be one of: {valid_steps}"
++         )
+          raise ValueError(msg) from e
+  
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
+-         msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
++         valid_steps = ", ".join(
++             step.name.lower()
++             for step in ProcessingStep
++         )
++         msg = (
++             f"Invalid start_step: {start_step}. "
++             f"Must be one of: {valid_steps}"
++         )
+          raise ValueError(msg) from e
+  
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+  from pathlib import Path
+  import sys
+- from typing import Any, cast
++ from typing import cast
+  
+  from loguru import logger
+```
+
+---
+
+Let me fix the remaining issues in `src/e11ocutionist/cli.py`:
+
+---
+
+```diff
+          start_step_enum = ProcessingStep[start_step.upper()]
+      except KeyError as e:
+-         valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
+-         msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
++         valid_steps = ", ".join(
++             step.name.lower()
++             for step in ProcessingStep
++         )
++         msg = (
++             f"Invalid start_step: {start_step}. "
++             f"Must be one of: {valid_steps}"
++         )
+          raise ValueError(msg) from e
+  
+      # Create pipeline config
+      config = PipelineConfig(
+          input_file=input_path,
+-         output_dir=Path(output_dir) if output_dir else None,
++         output_dir=(
++             Path(output_dir) if output_dir else None
++         ),
+          start_step=start_step_enum,
+          force_restart=force_restart,
+```
+
+---
+
+Let me run the tests again to see if we've fixed all the issues:
+
+---
+
+```bash
+./UPDATE.sh
+```
+
+```
+(e11ocutionist) adam@Hamlet e11ocutionist % 
+12::legacy_src/malmo_chunker.py:1326:5: FBT002 Boolean default positional argume
+nt in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_chunker.py,line=1327,col=5,endLine=1327,endColumn=
+11::legacy_src/malmo_chunker.py:1327:5: FBT001 Boolean-typed positional argument
+ in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_chunker.py,line=1327,col=5,endLine=1327,endColumn=
+11::legacy_src/malmo_chunker.py:1327:5: FBT002 Boolean default positional argume
+nt in function definition
+::error title=Ruff (S320),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_entitizer.py,line=70,col=16,endLine=70,endColumn=69:
+:legacy_src/malmo_entitizer.py:70:16: S320 Using `lxml` to parse untrusted data
+is known to be vulnerable to XML attacks
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=109,col=5,endLine=109,endColumn=
+11::legacy_src/malmo_entitizer.py:109:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=109,col=5,endLine=109,endColumn=
+11::legacy_src/malmo_entitizer.py:109:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (DTZ005),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=145,col=25,endLine=145,endColumn
+=39::legacy_src/malmo_entitizer.py:145:25: DTZ005 `datetime.datetime.now()` call
+ed without a `tz` argument
+::error title=Ruff (S320),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_entitizer.py,line=213,col=21,endLine=213,endColumn=7
+7::legacy_src/malmo_entitizer.py:213:21: S320 Using `lxml` to parse untrusted da
+ta is known to be vulnerable to XML attacks
+::error title=Ruff (S320),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_entitizer.py,line=222,col=31,endLine=224,endColumn=1
+8::legacy_src/malmo_entitizer.py:222:31: S320 Using `lxml` to parse untrusted da
+ta is known to be vulnerable to XML attacks
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=421,col=5,endLine=421,endColumn=
+11::legacy_src/malmo_entitizer.py:421:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=421,col=5,endLine=421,endColumn=
+11::legacy_src/malmo_entitizer.py:421:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_entitizer.py,line=502,col=5,endLine=502,endColumn
+=21::legacy_src/malmo_entitizer.py:502:5: PLR0913 Too many arguments in function
+ definition (7 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=507,col=5,endLine=507,endColumn=
+12::legacy_src/malmo_entitizer.py:507:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=507,col=5,endLine=507,endColumn=
+12::legacy_src/malmo_entitizer.py:507:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=508,col=5,endLine=508,endColumn=
+21::legacy_src/malmo_entitizer.py:508:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=508,col=5,endLine=508,endColumn=
+21::legacy_src/malmo_entitizer.py:508:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=509,col=5,endLine=509,endColumn=
+11::legacy_src/malmo_entitizer.py:509:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=509,col=5,endLine=509,endColumn=
+11::legacy_src/malmo_entitizer.py:509:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (DTZ005),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=557,col=25,endLine=557,endColumn
+=39::legacy_src/malmo_entitizer.py:557:25: DTZ005 `datetime.datetime.now()` call
+ed without a `tz` argument
+::error title=Ruff (C901),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_entitizer.py,line=607,col=5,endLine=607,endColumn=32
+::legacy_src/malmo_entitizer.py:607:5: C901 `process_document_with_model` is too
+ complex (11 > 10)
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_entitizer.py,line=607,col=5,endLine=607,endColumn
+=32::legacy_src/malmo_entitizer.py:607:5: PLR0913 Too many arguments in function
+ definition (9 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=613,col=5,endLine=613,endColumn=
+12::legacy_src/malmo_entitizer.py:613:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=613,col=5,endLine=613,endColumn=
+12::legacy_src/malmo_entitizer.py:613:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=614,col=5,endLine=614,endColumn=
+21::legacy_src/malmo_entitizer.py:614:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=614,col=5,endLine=614,endColumn=
+21::legacy_src/malmo_entitizer.py:614:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=616,col=5,endLine=616,endColumn=
+11::legacy_src/malmo_entitizer.py:616:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=616,col=5,endLine=616,endColumn=
+11::legacy_src/malmo_entitizer.py:616:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_entitizer.py,line=708,col=5,endLine=708,endColumn
+=37::legacy_src/malmo_entitizer.py:708:5: PLR0913 Too many arguments in function
+ definition (7 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=712,col=5,endLine=712,endColumn=
+12::legacy_src/malmo_entitizer.py:712:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=712,col=5,endLine=712,endColumn=
+12::legacy_src/malmo_entitizer.py:712:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=713,col=5,endLine=713,endColumn=
+21::legacy_src/malmo_entitizer.py:713:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=713,col=5,endLine=713,endColumn=
+21::legacy_src/malmo_entitizer.py:713:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=715,col=5,endLine=715,endColumn=
+11::legacy_src/malmo_entitizer.py:715:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=715,col=5,endLine=715,endColumn=
+11::legacy_src/malmo_entitizer.py:715:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (DTZ005),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=744,col=18,endLine=744,endColumn
+=32::legacy_src/malmo_entitizer.py:744:18: DTZ005 `datetime.datetime.now()` call
+ed without a `tz` argument
+::error title=Ruff (DTZ005),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=808,col=24,endLine=808,endColumn
+=38::legacy_src/malmo_entitizer.py:808:24: DTZ005 `datetime.datetime.now()` call
+ed without a `tz` argument
+::error title=Ruff (DTZ005),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=833,col=30,endLine=833,endColumn
+=44::legacy_src/malmo_entitizer.py:833:30: DTZ005 `datetime.datetime.now()` call
+ed without a `tz` argument
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_entitizer.py,line=850,col=5,endLine=850,endColumn
+=9::legacy_src/malmo_entitizer.py:850:5: PLR0913 Too many arguments in function
+definition (9 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=855,col=5,endLine=855,endColumn=
+12::legacy_src/malmo_entitizer.py:855:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=855,col=5,endLine=855,endColumn=
+12::legacy_src/malmo_entitizer.py:855:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=856,col=5,endLine=856,endColumn=
+21::legacy_src/malmo_entitizer.py:856:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=856,col=5,endLine=856,endColumn=
+21::legacy_src/malmo_entitizer.py:856:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=857,col=5,endLine=857,endColumn=
+14::legacy_src/malmo_entitizer.py:857:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=857,col=5,endLine=857,endColumn=
+14::legacy_src/malmo_entitizer.py:857:5: FBT002 Boolean default positional argum
+ent in function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=859,col=5,endLine=859,endColumn=
+11::legacy_src/malmo_entitizer.py:859:5: FBT001 Boolean-typed positional argumen
+t in function definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_entitizer.py,line=859,col=5,endLine=859,endColumn=
+11::legacy_src/malmo_entitizer.py:859:5: FBT002 Boolean default positional argum
+ent in function definition
+> ruff format
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+
+
+
+# THIS IS THE TEST RESULTS:
+============================= test session starts ==============================
+platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/adam/Deve
+loper/vcs/github.twardoch/pub/e11ocutionist/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist
+configfile: pyproject.toml
+plugins: anyio-4.9.0, cov-6.1.1
+collected 75 items                                                             
+
+tests/test_chunker.py::test_split_into_paragraphs PASSED                 [  1%]
+tests/test_chunker.py::test_paragraph_classification PASSED              [  2%]
+tests/test_chunker.py::test_count_tokens PASSED                          [  4%]
+tests/test_chunker.py::test_generate_hash PASSED                         [  5%]
+tests/test_chunker.py::test_generate_id PASSED                           [  6%]
+tests/test_chunker.py::test_escape_xml_chars PASSED                      [  8%]
+tests/test_chunker_semantic.py::test_itemize_document PASSED             [  9%]
+tests/test_chunker_semantic.py::test_semantic_analysis PASSED            [ 10%]
+tests/test_chunker_semantic.py::test_extract_and_parse_llm_response_manually PAS
+SED [ 12%]
+tests/test_chunker_semantic.py::test_add_unit_tags PASSED                [ 13%]
+tests/test_chunker_semantic.py::test_create_chunks PASSED                [ 14%]
+tests/test_cli.py::test_process_invalid_input_file PASSED                [ 16%]
+tests/test_cli.py::test_process_invalid_start_step PASSED                [ 17%]
+tests/test_cli.py::test_process_basic PASSED                             [ 18%]
+tests/test_cli.py::test_chunk_command PASSED                             [ 20%]
+tests/test_cli.py::test_entitize_command PASSED                          [ 21%]
+tests/test_cli.py::test_orate_command PASSED                             [ 22%]
+tests/test_cli.py::test_tonedown_command PASSED                          [ 24%]
+tests/test_cli.py::test_convert_11labs_command PASSED                    [ 25%]
+tests/test_cli.py::test_say_command PASSED                               [ 26%]
+tests/test_cli.py::test_say_command_with_file PASSED                     [ 28%]
+tests/test_cli.py::test_neifix_command PASSED                            [ 29%]
+tests/test_cli.py::test_say_command_missing_input PASSED                 [ 30%]
+tests/test_cli.py::test_say_command_missing_api_key FAILED               [ 32%]
+tests/test_cli.py::test_say_command_env_api_key PASSED                   [ 33%]
+tests/test_cli.py::test_debug_logging_configuration PASSED               [ 34%]
+tests/test_cli.py::test_verbose_logging_configuration PASSED             [ 36%]
+tests/test_cli.py::test_process_pipeline_error PASSED                    [ 37%]
+tests/test_cli.py::test_orate_selective_steps PASSED                     [ 38%]
+tests/test_cli.py::test_process_with_invalid_output_dir PASSED           [ 40%]
+tests/test_cli.py::test_chunk_command_with_invalid_model PASSED          [ 41%]
+tests/test_cli.py::test_entitize_command_with_invalid_temperature PASSED [ 42%]
+tests/test_cli.py::test_orate_command_no_steps_selected PASSED           [ 44%]
+tests/test_cli.py::test_tonedown_command_invalid_min_em_distance PASSED  [ 45%]
+tests/test_cli.py::test_convert_11labs_command_with_both_modes PASSED    [ 46%]
+tests/test_cli.py::test_say_command_with_both_inputs PASSED              [ 48%]
+tests/test_cli.py::test_neifix_command_same_input_output PASSED          [ 49%]
+tests/test_cli.py::test_process_with_backup_error PASSED                 [ 50%]
+tests/test_cli.py::test_process_with_custom_config PASSED                [ 52%]
+tests/test_elevenlabs_converter.py::test_extract_text_from_xml PASSED    [ 53%]
+tests/test_elevenlabs_converter.py::test_process_dialog PASSED           [ 54%]
+tests/test_elevenlabs_converter.py::test_process_document PASSED         [ 56%]
+tests/test_elevenlabs_synthesizer.py::test_sanitize_filename PASSED      [ 57%]
+tests/test_elevenlabs_synthesizer.py::test_get_personal_voices PASSED    [ 58%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_voice PASSED  [ 60%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices PASSED [ 6
+1%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices_missing_ap
+i_key PASSED [ 62%]
+tests/test_entitizer.py::test_extract_item_elements PASSED               [ 64%]
+tests/test_entitizer.py::test_extract_nei_from_tags PASSED               [ 65%]
+tests/test_entitizer.py::test_merge_tagged_items PASSED                  [ 66%]
+tests/test_entitizer.py::test_nei_identification_mock PASSED             [ 68%]
+tests/test_integration.py::test_process_to_chunks PASSED                 [ 69%]
+tests/test_integration.py::test_process_chunks PASSED                    [ 70%]
+tests/test_integration.py::test_process_to_text PASSED                   [ 72%]
+tests/test_integration.py::test_process_to_speech PASSED                 [ 73%]
+tests/test_integration.py::test_full_pipeline_integration PASSED         [ 74%]
+tests/test_neifix.py::test_transform_nei_content PASSED                  [ 76%]
+tests/test_neifix.py::test_transform_nei_content_return_content PASSED   [ 77%]
+tests/test_orator.py::test_extract_chunk_items PASSED                    [ 78%]
+tests/test_orator.py::test_merge_processed_items PASSED                  [ 80%]
+tests/test_orator.py::test_enhance_punctuation PASSED                    [ 81%]
+tests/test_package.py::test_version PASSED                               [ 82%]
+tests/test_package.py::test_package_structure PASSED                     [ 84%]
+tests/test_pipeline.py::test_pipeline_config_defaults PASSED             [ 85%]
+tests/test_pipeline.py::test_pipeline_config_custom PASSED               [ 86%]
+tests/test_pipeline.py::test_pipeline_output_directory_creation PASSED   [ 88%]
+tests/test_pipeline.py::test_pipeline_progress_tracking PASSED           [ 89%]
+tests/test_pipeline.py::test_pipeline_backup_functionality PASSED        [ 90%]
+tests/test_pipeline.py::test_pipeline_step_ordering PASSED               [ 92%]
+tests/test_pipeline.py::test_pipeline_step_dependencies PASSED           [ 93%]
+tests/test_pipeline.py::test_pipeline_resume_from_step PASSED            [ 94%]
+tests/test_pipeline.py::test_pipeline_force_restart PASSED               [ 96%]
+tests/test_tonedown.py::test_extract_neis_from_document PASSED           [ 97%]
+tests/test_tonedown.py::test_update_nei_tags PASSED                      [ 98%]
+tests/test_tonedown.py::test_reduce_emphasis PASSED                      [100%]
+
+=================================== FAILURES ===================================
+_______________________ test_say_command_missing_api_key _______________________
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-40/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+        with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+>           say(text="Hello", output_dir=sample_output_dir, api_key=None)
+
+tests/test_cli.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/e11ocutionist/cli.py:305: in say
+    result = synthesizer.synthesize_with_all_voices(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'Hello'
+output_dir = PosixPath('/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T
+/pytest-of-adam/pytest-40/test_say_command_missing_api_k0/output')
+api_key = 'sk_f83fde138e9645ce54c25d96c0db7cd2d5ca4d91410a64ed'
+model_id = 'eleven_multilingual_v2', output_format = 'mp3_44100_128'
+verbose = False
+
+    def synthesize_with_all_voices(
+        text: str,
+        output_dir: str | Path,
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+    ) -> str:
+        """Synthesize text with all available voices."""
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        set_api_key(api_key)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+        voices = get_personal_voices(api_key)
+        if not voices:
+            msg = "No personal voices found"
+>           raise ValueError(msg)
+E           ValueError: No personal voices found
+
+src/e11ocutionist/elevenlabs_synthesizer.py:193: ValueError
+
+During handling of the above exception, another exception occurred:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-40/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+>       with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'ElevenLabs API key not provided'
+E        Input: 'No personal voices found'
+
+tests/test_cli.py:314: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2025-05-17 03:12:55 | ERROR    | Processing failed: No personal voices found
+============================= slowest 10 durations =============================
+0.72s call     tests/test_chunker.py::test_count_tokens
+0.04s setup    tests/test_cli.py::test_process_with_invalid_output_dir
+0.02s setup    tests/test_cli.py::test_orate_selective_steps
+0.02s call     tests/test_cli.py::test_orate_selective_steps
+0.02s call     tests/test_cli.py::test_say_command_env_api_key
+0.01s call     tests/test_cli.py::test_process_basic
+0.01s call     tests/test_cli.py::test_process_with_invalid_output_dir
+0.01s call     tests/test_cli.py::test_neifix_command_same_input_output
+0.01s call     tests/test_cli.py::test_process_with_custom_config
+0.01s call     tests/test_cli.py::test_entitize_command
+=========================== short test summary info ============================
+FAILED tests/test_cli.py::test_say_command_missing_api_key - AssertionError: Reg
+ex pattern did not match.
+========================= 1 failed, 74 passed in 4.46s =========================
+============================= test session starts ==============================
+platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/adam/Deve
+loper/vcs/github.twardoch/pub/e11ocutionist/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist
+configfile: pyproject.toml
+plugins: anyio-4.9.0, cov-6.1.1
+collected 75 items                                                             
+
+tests/test_chunker.py::test_split_into_paragraphs PASSED                 [  1%]
+tests/test_chunker.py::test_paragraph_classification PASSED              [  2%]
+tests/test_chunker.py::test_count_tokens PASSED                          [  4%]
+tests/test_chunker.py::test_generate_hash PASSED                         [  5%]
+tests/test_chunker.py::test_generate_id PASSED                           [  6%]
+tests/test_chunker.py::test_escape_xml_chars PASSED                      [  8%]
+tests/test_chunker_semantic.py::test_itemize_document PASSED             [  9%]
+tests/test_chunker_semantic.py::test_semantic_analysis PASSED            [ 10%]
+tests/test_chunker_semantic.py::test_extract_and_parse_llm_response_manually PAS
+SED [ 12%]
+tests/test_chunker_semantic.py::test_add_unit_tags PASSED                [ 13%]
+tests/test_chunker_semantic.py::test_create_chunks PASSED                [ 14%]
+tests/test_cli.py::test_process_invalid_input_file PASSED                [ 16%]
+tests/test_cli.py::test_process_invalid_start_step PASSED                [ 17%]
+tests/test_cli.py::test_process_basic PASSED                             [ 18%]
+tests/test_cli.py::test_chunk_command PASSED                             [ 20%]
+tests/test_cli.py::test_entitize_command PASSED                          [ 21%]
+tests/test_cli.py::test_orate_command PASSED                             [ 22%]
+tests/test_cli.py::test_tonedown_command PASSED                          [ 24%]
+tests/test_cli.py::test_convert_11labs_command PASSED                    [ 25%]
+tests/test_cli.py::test_say_command PASSED                               [ 26%]
+tests/test_cli.py::test_say_command_with_file PASSED                     [ 28%]
+tests/test_cli.py::test_neifix_command PASSED                            [ 29%]
+tests/test_cli.py::test_say_command_missing_input PASSED                 [ 30%]
+tests/test_cli.py::test_say_command_missing_api_key FAILED               [ 32%]
+tests/test_cli.py::test_say_command_env_api_key PASSED                   [ 33%]
+tests/test_cli.py::test_debug_logging_configuration PASSED               [ 34%]
+tests/test_cli.py::test_verbose_logging_configuration PASSED             [ 36%]
+tests/test_cli.py::test_process_pipeline_error PASSED                    [ 37%]
+tests/test_cli.py::test_orate_selective_steps PASSED                     [ 38%]
+tests/test_cli.py::test_process_with_invalid_output_dir PASSED           [ 40%]
+tests/test_cli.py::test_chunk_command_with_invalid_model PASSED          [ 41%]
+tests/test_cli.py::test_entitize_command_with_invalid_temperature PASSED [ 42%]
+tests/test_cli.py::test_orate_command_no_steps_selected PASSED           [ 44%]
+tests/test_cli.py::test_tonedown_command_invalid_min_em_distance PASSED  [ 45%]
+tests/test_cli.py::test_convert_11labs_command_with_both_modes PASSED    [ 46%]
+tests/test_cli.py::test_say_command_with_both_inputs PASSED              [ 48%]
+tests/test_cli.py::test_neifix_command_same_input_output PASSED          [ 49%]
+tests/test_cli.py::test_process_with_backup_error PASSED                 [ 50%]
+tests/test_cli.py::test_process_with_custom_config PASSED                [ 52%]
+tests/test_elevenlabs_converter.py::test_extract_text_from_xml PASSED    [ 53%]
+tests/test_elevenlabs_converter.py::test_process_dialog PASSED           [ 54%]
+tests/test_elevenlabs_converter.py::test_process_document PASSED         [ 56%]
+tests/test_elevenlabs_synthesizer.py::test_sanitize_filename PASSED      [ 57%]
+tests/test_elevenlabs_synthesizer.py::test_get_personal_voices PASSED    [ 58%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_voice PASSED  [ 60%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices PASSED [ 6
+1%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices_missing_ap
+i_key PASSED [ 62%]
+tests/test_entitizer.py::test_extract_item_elements PASSED               [ 64%]
+tests/test_entitizer.py::test_extract_nei_from_tags PASSED               [ 65%]
+tests/test_entitizer.py::test_merge_tagged_items PASSED                  [ 66%]
+tests/test_entitizer.py::test_nei_identification_mock PASSED             [ 68%]
+tests/test_integration.py::test_process_to_chunks PASSED                 [ 69%]
+tests/test_integration.py::test_process_chunks PASSED                    [ 70%]
+tests/test_integration.py::test_process_to_text PASSED                   [ 72%]
+tests/test_integration.py::test_process_to_speech PASSED                 [ 73%]
+tests/test_integration.py::test_full_pipeline_integration PASSED         [ 74%]
+tests/test_neifix.py::test_transform_nei_content PASSED                  [ 76%]
+tests/test_neifix.py::test_transform_nei_content_return_content PASSED   [ 77%]
+tests/test_orator.py::test_extract_chunk_items PASSED                    [ 78%]
+tests/test_orator.py::test_merge_processed_items PASSED                  [ 80%]
+tests/test_orator.py::test_enhance_punctuation PASSED                    [ 81%]
+tests/test_package.py::test_version PASSED                               [ 82%]
+tests/test_package.py::test_package_structure PASSED                     [ 84%]
+tests/test_pipeline.py::test_pipeline_config_defaults PASSED             [ 85%]
+tests/test_pipeline.py::test_pipeline_config_custom PASSED               [ 86%]
+tests/test_pipeline.py::test_pipeline_output_directory_creation PASSED   [ 88%]
+tests/test_pipeline.py::test_pipeline_progress_tracking PASSED           [ 89%]
+tests/test_pipeline.py::test_pipeline_backup_functionality PASSED        [ 90%]
+tests/test_pipeline.py::test_pipeline_step_ordering PASSED               [ 92%]
+tests/test_pipeline.py::test_pipeline_step_dependencies PASSED           [ 93%]
+tests/test_pipeline.py::test_pipeline_resume_from_step PASSED            [ 94%]
+tests/test_pipeline.py::test_pipeline_force_restart PASSED               [ 96%]
+tests/test_tonedown.py::test_extract_neis_from_document PASSED           [ 97%]
+tests/test_tonedown.py::test_update_nei_tags PASSED                      [ 98%]
+tests/test_tonedown.py::test_reduce_emphasis PASSED                      [100%]/
+Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist/.venv/lib/python3.12/
+site-packages/coverage/inorout.py:509: CoverageWarning: Module tests was never i
+mported. (module-not-imported)
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+
+
+=================================== FAILURES ===================================
+_______________________ test_say_command_missing_api_key _______________________
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-41/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+        with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+>           say(text="Hello", output_dir=sample_output_dir, api_key=None)
+
+tests/test_cli.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/e11ocutionist/cli.py:305: in say
+    result = synthesizer.synthesize_with_all_voices(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'Hello'
+output_dir = PosixPath('/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T
+/pytest-of-adam/pytest-41/test_say_command_missing_api_k0/output')
+api_key = 'sk_f83fde138e9645ce54c25d96c0db7cd2d5ca4d91410a64ed'
+model_id = 'eleven_multilingual_v2', output_format = 'mp3_44100_128'
+verbose = False
+
+    def synthesize_with_all_voices(
+        text: str,
+        output_dir: str | Path,
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+    ) -> str:
+        """Synthesize text with all available voices."""
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        set_api_key(api_key)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+        voices = get_personal_voices(api_key)
+        if not voices:
+            msg = "No personal voices found"
+>           raise ValueError(msg)
+E           ValueError: No personal voices found
+
+src/e11ocutionist/elevenlabs_synthesizer.py:193: ValueError
+
+During handling of the above exception, another exception occurred:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-41/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+>       with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'ElevenLabs API key not provided'
+E        Input: 'No personal voices found'
+
+tests/test_cli.py:314: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2025-05-17 03:13:07 | ERROR    | Processing failed: No personal voices found
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.12.8-final-0 _______________
+
+Name                                          Stmts   Miss Branch BrPart  Cover 
+  Missing
+--------------------------------------------------------------------------------
+---------
+src/e11ocutionist/__init__.py                    13      2      0      0    85% 
+  32-34
+src/e11ocutionist/__main__.py                     1      1      0      0     0% 
+  5
+src/e11ocutionist/__version__.py                  9      0      0      0   100%
+src/e11ocutionist/chunker.py                    484    210    158     15    53% 
+  203, 223, 300, 302, 360-369, 373-378, 400-403, 424-479, 495-566, 584-618, 623,
+ 634-636, 650-673, 742-744, 759-761, 771->775, 850-851, 888-895, 900-910, 929-93
+5, 947-950, 984-985, 1026->1039, 1046-1049, 1067-1138
+src/e11ocutionist/cli.py                        178     24     42      7    86% 
+  76, 106-108, 140-142, 172->174, 174->176, 177, 179, 198-200, 234-236, 268-270,
+ 301-302, 343-345, 427
+src/e11ocutionist/e11ocutionist.py              229     53     52     14    73% 
+  89-90, 96-97, 111-112, 130-131, 135, 142, 163-165, 216->223, 217->216, 224, 28
+3-286, 307-309, 324-325, 338-346, 365-368, 383-384, 416-419, 434-435, 459-462, 4
+67-498
+src/e11ocutionist/elevenlabs_converter.py        69     16     30      7    69% 
+  85-86, 90-107, 155-156, 167->181, 173-174, 177->181, 184
+src/e11ocutionist/elevenlabs_synthesizer.py      77     10     12      3    85% 
+  21, 30-32, 42-43, 136-137, 154-155, 207->196
+src/e11ocutionist/entitizer.py                  207    142     82      6    29% 
+  42, 56-57, 80-107, 132->125, 159->157, 176->179, 183-186, 207-275, 288-311, 33
+4, 358-367, 397-454, 483-582
+src/e11ocutionist/neifix.py                      32      1      8      1    95% 
+  67
+src/e11ocutionist/orator.py                     214     54     88     22    72% 
+  46-47, 65-66, 89, 128-132, 155, 193-197, 260, 273-302, 324, 328-332, 337->336,
+ 340->336, 351->349, 355->367, 362->361, 390-391, 420, 426-428, 494->509, 503-50
+6, 509->524, 518-521, 524->539, 533-536, 539->556, 550-553
+src/e11ocutionist/tonedown.py                   211    115     96     19    43% 
+  46-47, 58, 81, 85, 89-90, 109-197, 215-328, 343, 351-352, 358->356, 367, 371->
+363, 375->363, 380->383, 391-393, 413-414, 421-422, 431->430, 456, 462->472, 468
+-469, 472->482, 478-479, 490-492
+src/e11ocutionist/utils.py                       83     45     10      1    42% 
+  52-58, 90-101, 115-138, 157, 164-166, 189-192, 197-204
+tests/test_chunker.py                            65      0      0      0   100%
+tests/test_chunker_semantic.py                   51      1      0      0    98% 
+  19
+tests/test_cli.py                               175      0      0      0   100%
+tests/test_elevenlabs_converter.py               70      0      8      1    99% 
+  165->164
+tests/test_elevenlabs_synthesizer.py             69      0      0      0   100%
+tests/test_entitizer.py                          52      0      0      0   100%
+tests/test_integration.py                       108      8      4      2    91% 
+  149-152, 156-157, 179-181, 185-186
+tests/test_neifix.py                             42      0      6      2    96% 
+  69->68, 100->exit
+tests/test_orator.py                             35      0      0      0   100%
+tests/test_package.py                            18      2      4      1    86% 
+  37->36, 42-43
+tests/test_pipeline.py                          127      0      0      0   100%
+tests/test_tonedown.py                           25      0      0      0   100%
+--------------------------------------------------------------------------------
+---------
+TOTAL                                          2644    684    600    101    69%
+============================= slowest 10 durations =============================
+1.07s call     tests/test_chunker.py::test_count_tokens
+0.14s call     tests/test_cli.py::test_say_command_missing_api_key
+0.04s call     tests/test_cli.py::test_say_command_with_file
+0.03s call     tests/test_cli.py::test_entitize_command
+0.03s call     tests/test_cli.py::test_process_invalid_start_step
+0.03s call     tests/test_cli.py::test_tonedown_command_invalid_min_em_distance
+0.03s call     tests/test_cli.py::test_neifix_command
+0.03s call     tests/test_cli.py::test_say_command_env_api_key
+0.03s call     tests/test_cli.py::test_convert_11labs_command_with_both_modes
+0.03s call     tests/test_cli.py::test_orate_command_no_steps_selected
+=========================== short test summary info ============================
+FAILED tests/test_cli.py::test_say_command_missing_api_key - AssertionError: Reg
+ex pattern did not match.
+======================== 1 failed, 74 passed in 10.85s =========================
+
+
+
+# THIS IS OUR CURRENT TODO:
+# TODO List for e11ocutionist
+
+The old code that we are porting (for your reference) is in the `legacy_src/` fo
+lder.
+
+The new code is in the `src/` folder.
+
+## 1. Critical: Fix Test Failures [PRIORITY: CRITICAL]
+
+- [ ] **Fix `ImportError` in `tests/test_cli.py`**
+    - **Reasoning:** Tests are failing to collect due to `ImportError: cannot im
+port name 'process' from 'e11ocutionist.cli'`. This blocks all other test execut
+ion and reporting.
+    - **Plan:**
+        - Investigate `src/e11ocutionist/cli.py` to understand why the `process`
+ function (or object) is not found or not exported correctly.
+        - Check for typos in `tests/test_cli.py` or `src/e11ocutionist/cli.py`.
+        - Ensure `src/e11ocutionist/cli.py` defines and correctly exports the `p
+rocess` symbol.
+        - Modify `__init__.py` files if necessary to ensure proper module export
+s.
+        - Run `pytest tests/test_cli.py` locally to confirm the fix.
+
+## 2. Testing and Documentation [PRIORITY: HIGH]
+
+### 2.1. Implement Unit Tests
+
+- [ ] **Improve test coverage (currently at 11% overall)**
+    - **Reasoning:** Low test coverage makes the codebase fragile and hard to re
+factor safely.
+    - **Plan:** Incrementally increase coverage for all modules, focusing on cri
+tical paths first.
+
+  - [ ] **Implement unit tests for `cli.py` (currently at 9%)**
+    - **Plan:**
+        - After fixing the import error, identify main CLI commands and their fu
+nctionalities.
+        - Write tests for command parsing (using `click.testing.CliRunner`).
+        - Test different command arguments and options (valid and invalid).
+        - Mock underlying service calls (e.g., `E11ocutionistPipeline`) to isola
+te CLI logic.
+        - Verify correct output and exit codes.
+
+  - [ ] **Implement unit tests for `e11ocutionist.py` (pipeline orchestration, c
+urrently at 18%)**
+    - **Plan:**
+        - Test `PipelineConfig` creation with default and custom values.
+        - Test pipeline step execution order.
+        - Test handling of `start_step` and `force_restart`.
+        - Test progress tracking and backup functionality.
+        - Mock individual processing steps (`chunker`, `entitizer`, etc.) to tes
+t the pipeline's control flow.
+        - Test error handling if a step fails.
+
+  - [ ] **Implement unit tests for `entitizer.py` (currently at 9%)**
+    - **Plan:**
+        - Test NEI identification and tagging logic with various input texts.
+        - Test dictionary building, updates, and merging processes.
+        - Test XML input parsing and output generation.
+        - Cover edge cases like empty inputs or malformed XML.
+        - Mock LLM calls for entity recognition if applicable.
+
+  - [ ] **Implement unit tests for `utils.py` (currently at 20%)**
+    - **Plan:**
+        - For each utility function:
+            - Identify its purpose and expected inputs/outputs.
+            - Write tests for typical use cases.
+            - Write tests for edge cases (e.g., empty inputs, invalid types).
+            - Ensure pure functions are tested for a variety of inputs.
+
+  - [ ] **Implement unit tests for `chunker.py` (currently at 7%)**
+    - **Plan:**
+        - Test paragraph splitting and classification logic.
+        - Test text processing utilities (token counting, hash generation).
+        - Test ID generation and character escaping.
+        - Test semantic analysis (mocking LLM calls).
+        - Test chunk creation with various inputs (short text, long text, text w
+ith/without metadata).
+
+  - [ ] **Implement unit tests for `orator.py` (currently at 6%)**
+    - **Plan:**
+        - Test item extraction from XML.
+        - Test merging processed items back into XML.
+        - Test punctuation, sentence, word, and emotion enhancement logic (mocki
+ng LLM calls).
+        - Test the full `orator` processing pipeline with various inputs.
+
+  - [ ] **Implement unit tests for `tonedown.py` (currently at 5%)**
+    - **Plan:**
+        - Test NEI extraction from documents.
+        - Test language detection logic.
+        - Test pronunciation cue review process (mocking LLM calls).
+        - Test emphasis reduction logic.
+        - Test NEI tag updates in the XML.
+  
+  - [ ] **Implement unit tests for `elevenlabs_converter.py` (currently at 9%)**
+    - **Plan:**
+      - Test text extraction from various XML structures.
+      - Test dialog processing rules and transformations.
+      - Test handling of different quote styles and character assignments.
+      - Test generation of ElevenLabs-specific markup.
+      - Cover complex dialog scenarios (nested quotes, multiple speakers).
+
+  - [ ] **Implement unit tests for `elevenlabs_synthesizer.py` (currently at 29%
+)**
+    - **Plan:**
+      - Test filename sanitization with various inputs.
+      - Test voice filtering and selection logic.
+      - Mock ElevenLabs API calls to test text-to-speech synthesis logic.
+      - Test handling of API errors and retries.
+      - Test batch processing and file output.
+
+  - [ ] **Implement unit tests for `neifix.py` (currently at 10%)**
+    - **Plan:**
+      - Test NEI content transformation rules.
+      - Test input file reading and output file writing.
+      - Test handling of edge cases (empty files, missing files, invalid XML).
+      - Verify the integrity of the output XML structure.
+
+- [ ] **Create test fixtures**
+    - **Reasoning:** Reusable test data and mocks simplify test writing and main
+tenance.
+    - **Plan:**
+        - Create a `fixtures/` directory within `tests/`.
+        - Add sample input XML files representing different scenarios (e.g., sim
+ple text, dialogs, various entities).
+        - Develop mock LLM response generators or static mock response files.
+        - Define standard configurations for test environment variables (e.g., A
+PI keys for mock servers if used).
+
+- [ ] **Improve `orator.py` tests: Test error handling and recovery**
+    - **Reasoning:** Robust error handling is crucial for pipeline stability.
+    - **Plan:**
+        - Identify potential failure points in `orator.py` (e.g., LLM errors, ma
+lformed XML).
+        - Write tests that simulate these failures.
+        - Verify that `orator.py` handles these errors gracefully (e.g., logs er
+rors, retries, or skips problematic items).
+
+- [ ] **Improve `elevenlabs_converter.py` tests: Test with more complex dialog s
+cenarios**
+    - **Reasoning:** Dialog processing is a key feature and needs thorough testi
+ng.
+    - **Plan:**
+        - Create input XML files with complex dialogs (e.g., nested quotes, rapi
+d speaker changes, attributed vs. non-attributed speech).
+        - Write tests to verify correct conversion of these scenarios.
+
+- [ ] **Improve integration tests: Test error handling between modules**
+    - **Reasoning:** Ensure that errors in one stage of the pipeline are handled
+ correctly by subsequent stages or the main pipeline orchestrator.
+    - **Plan:**
+        - Design integration test scenarios where one module (e.g., `chunker`) i
+s forced to produce an error or invalid output.
+        - Verify that the pipeline (`e11ocutionist.py`) catches this error or th
+at the next module in sequence handles the problematic input gracefully.
+
+### 2.2. Improve Documentation
+
+- [ ] **Update README.md**
+    - **Reasoning:** The README is the entry point for new users and contributor
+s.
+    - **Plan:**
+        - Review current README for accuracy and completeness.
+        - Add a section on detailed configuration options for the pipeline and i
+ndividual modules.
+        - Create a troubleshooting section covering common errors (like the CLI 
+import error) and their solutions.
+        - Add a "Project Status" section including current test coverage and kno
+wn major issues.
+
+- [ ] **Add docstrings to all public functions and classes in `src/`**
+    - **Reasoning:** Good docstrings improve code understanding and maintainabil
+ity.
+    - **Plan:**
+        - Iterate through all `.py` files in `src/e11ocutionist/`.
+        - For each public function, class, and method:
+            - Ensure a clear, imperative docstring exists.
+            - Describe the purpose, arguments (with types), and return values.
+            - Add simple usage examples where helpful (e.g., for `utils.py` func
+tions).
+            - Follow PEP 257 conventions.
+
+- [ ] **Document CLI commands comprehensively**
+    - **Reasoning:** Users need clear guidance on how to use the CLI.
+    - **Plan:**
+        - Review `src/e11ocutionist/cli.py`.
+        - Ensure all `fire` commands and their options have comprehensive help t
+ext.
+        - Add examples for each command and common combinations of options.
+        - Generate a `CLI_USAGE.md` file or section in README with this informat
+ion.
+
+### 2.3. Final Integration Tasks
+
+- [ ] **Add comprehensive error handling in `src/`**
+    - **Reasoning:** The application should be resilient to unexpected issues.
+    - **Plan:**
+        - Define custom exception classes (e.g., `ChunkerError`, `EntitizerError
+`, `LLMError`) in `e11ocutionist.exceptions`.
+        - Review `src/` modules and replace generic `Exception` handling with sp
+ecific custom exceptions.
+        - Implement `try-except` blocks around external calls (LLMs, file I/O).
+        - Add meaningful error messages that guide the user.
+        - Consider recovery strategies for common failures (e.g., retries for LL
+M calls).
+
+- [ ] **Add logging enhancements in `src/`**
+    - **Reasoning:** Effective logging is essential for debugging and monitoring
+.
+    - **Plan:**
+        - Standardize on `loguru` for logging throughout `src/`.
+        - Improve log messages for clarity, including context-specific informati
+on.
+        - Implement structured logging where appropriate.
+        - Add configurable log levels (DEBUG, INFO, WARNING, ERROR) via CLI opti
+ons or config file.
+        - Add progress indicators for long-running operations (e.g., processing 
+a large document).
+
+- [ ] **Create example workflows**
+    - **Reasoning:** Examples help users understand how to use the system for co
+mmon tasks.
+    - **Plan:**
+        - Identify 2-3 common use cases for `e11ocutionist`.
+        - Create example scripts (e.g., shell scripts or Python scripts) that de
+monstrate these workflows.
+        - Document these workflows in the README or a separate `EXAMPLES.md` fil
+e.
+        - Include sample input files and describe the expected outputs.
+
+## 3. Code Quality and Maintenance [PRIORITY: HIGH]
+
+### 3.1. Fix Linting Issues in `src/` (New Code)
+
+- [ ] **Update `pyproject.toml` ruff configuration**
+    - **Reasoning:** Ensure linting rules are appropriate for the project.
+    - **Plan:**
+        - Review existing `pyproject.toml` for `ruff` settings.
+        - Add specific rules to `lint.select` or `lint.ignore` to address common
+ issues or noisy warnings not relevant to `src/` code.
+        - Ensure `per-file-ignores` is used sparingly, primarily for specific le
+gacy or generated code if any.
+
+- [ ] **Address FBT001/FBT002 warnings (boolean arguments) in `src/`**
+    - **Reasoning:** Boolean positional arguments can be confusing.
+    - **Plan:**
+        - Identify any new functions in `src/` that use boolean positional argum
+ents.
+        - Refactor them to use keyword-only arguments for boolean flags (`def fu
+nc(*, flag: bool = False)`).
+        - Update function calls accordingly.
+
+- [ ] **Fix PLR0913 warnings (too many arguments) in `src/`**
+    - **Reasoning:** Functions with too many arguments are hard to use and test.
+    - **Plan:**
+        - Identify any new functions in `src/` with more than 5-6 arguments.
+        - Refactor by grouping related parameters into dataclasses or small obje
+cts.
+        - Update function definitions and call sites.
+
+- [ ] **Fix datetime issues (DTZ005 - naive datetimes) in `src/`**
+    - **Reasoning:** Naive datetimes can lead to timezone-related bugs.
+    - **Plan:**
+        - Search for `datetime.now()` or `datetime.utcnow()` in `src/`.
+        - Replace with timezone-aware datetimes, e.g., `datetime.now(timezone.ut
+c)`.
+        - Ensure all datetime objects are handled with explicit timezone informa
+tion.
+
+- [ ] **Refactor complex functions (C901, PLR0912, PLR0915) in `src/`**
+    - **Reasoning:** Complex functions are difficult to understand, test, and ma
+intain.
+    - **Plan:**
+        - Run `ruff` to identify functions in `src/` flagged for complexity, too
+ many branches, or too many statements.
+        - For each identified function:
+            - Analyze its logic and responsibilities.
+            - Break it down into smaller, more focused helper functions.
+            - Aim for functions that do one thing well.
+
+- [ ] **Address security issues (S320, S603, S324, B904 etc.) in `src/`**
+    - **Reasoning:** Ensure new code is secure.
+    - **Plan:**
+        - **S320 (lxml):** If parsing external XML in `src/`, ensure `defusedxml
+.lxml` is used or parsing is done with appropriate security measures.
+        - **S603 (subprocess):** If using `subprocess` in `src/`, ensure command
+s are not constructed from untrusted input, or use `shlex.quote`.
+        - **S324 (insecure hash):** Avoid insecure hash functions like MD5/SHA1 
+in `src/` if cryptographic security is needed; prefer SHA256+.
+        - **B904 (raise from):** In `src/`, when re-raising exceptions, use `rai
+se NewException from original_exception` to preserve context.
+        - Regularly review `ruff` security warnings for new code in `src/`.
+
+### 3.2. Code Structure Improvements for `src/`
+
+- [ ] **Implement consistent error handling (using custom exceptions)**
+    - **Previously mentioned in 2.3, also a code quality item.**
+    - **Plan:**
+        - Finalize the design of custom exception classes in `e11ocutionist.exce
+ptions`.
+        - Systematically refactor `src/` modules to use these custom exceptions.
+        - Ensure a clear hierarchy (e.g., `E11ocutionistError` as a base).
+
+- [ ] **Enhance module structure and interfaces**
+    - **Reasoning:** A well-defined structure improves clarity and reusability.
+    - **Plan:**
+        - Review the responsibilities of each module in `src/e11ocutionist/`.
+        - Identify opportunities to organize related functions into logical clas
+ses.
+        - Define clear public interfaces for each module, minimizing direct acce
+ss to internal implementation details.
+        - Look for code duplication and refactor into shared utility functions o
+r classes.
+
+- [ ] **Implement robust configuration management**
+    - **Reasoning:** Centralized and validated configuration is easier to manage
+.
+    - **Plan:**
+        - Design a central configuration object/dataclass (e.g., `PipelineConfig
+` extension or a new one) to hold all pipeline and module settings.
+        - Implement loading of configuration from a file (e.g., TOML or YAML) an
+d/or environment variables, in addition to CLI arguments.
+        - Add validation for configuration parameters (e.g., using Pydantic).
+        - Provide sensible defaults and clear documentation for all configuratio
+n options.
+
+### 3.3. Testing and CI/CD
+
+- [ ] **Set up GitHub Actions workflow**
+    - **Reasoning:** Automated testing and linting improve code quality and catc
+h regressions early.
+    - **Plan:**
+        - Create a workflow file (e.g., `.github/workflows/ci.yml`).
+        - **Linting & Formatting:** Add a job to run `ruff check` and `ruff form
+at --check`.
+        - **Testing:** Add a job to run `pytest` with coverage reporting.
+        - **Coverage Upload:** Configure the workflow to upload coverage reports
+ to a service like Codecov or Coveralls.
+        - **Publishing (Optional, later):** Add a job to build and publish the p
+ackage to PyPI on tagged releases.
+        - Trigger the workflow on pushes to `main` and on pull requests.
+
+## 4. Feature Enhancements [PRIORITY: LOW]
+
+### 4.1. User Experience Improvements
+
+- [ ] **Add detailed progress reporting for CLI**
+    - **Reasoning:** Users need feedback on long-running operations.
+    - **Plan:**
+        - Integrate a library like `rich.progress` or `tqdm` into the CLI.
+        - Display progress bars for document processing stages.
+        - Show estimated time remaining if feasible.
+        - Provide a summary of processing statistics upon completion.
+
+- [ ] **Create more user-friendly error messages**
+    - **Reasoning:** Clear error messages help users diagnose and fix problems.
+    - **Plan:**
+        - Review existing error messages in `src/`.
+        - Enhance them to include more context and actionable advice.
+        - For common configuration errors, suggest specific solutions or point t
+o relevant documentation.
+
+
+
+
+
+I think it’s time to make some more tests, and iteratively run ./UPDATE.sh until
+ the tests pass.
+<task>
+(1) Focus on implementing TODO items that are high priority, especially test fai
+lures and new tests.
+(2) Update the progress in the 'TODO.md' file: mark items as done.
+(3) Run ./UPDATE.sh again until and continue improving, until the tests pass.
+</task>
+
+
+
+```
+
+---
+
+I see that we have one failing test: `test_say_command_missing_api_key`. The issue is that we're getting a different error message than expected. Let me fix this by modifying the `say` function in `cli.py` to check for the API key before calling `synthesize_with_all_voices`:
+
+---
+
+```diff
+      debug: bool = False,
+  ) -> str:
+-     """Synthesize text using ElevenLabs voices."""
++     """Run the say step."""
+      _configure_logging(debug, verbose)
+-     _validate_output_dir(output_dir)
++ 
++     # Validate input
++     if text is None and input_file is None:
++         msg = "Either text or input_file must be provided"
++         raise ValueError(msg)
+  
+      if text is not None and input_file is not None:
+          msg = "Cannot provide both text and input file"
+          raise ValueError(msg)
+  
+-     if text is None and input_file is not None:
++     # Check for API key
++     if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
++         msg = "ElevenLabs API key not provided"
++         raise ValueError(msg)
++ 
++     # Get text from input file if provided
++     if input_file is not None:
+          with open(input_file, encoding="utf-8") as f:
+              text = f.read()
+-     elif text is None:
+-         msg = "Either 'text' or 'input_file' must be provided"
+-         raise ValueError(msg)
+- 
+-     if api_key is None:
+-         api_key = os.environ.get("ELEVENLABS_API_KEY")
+-         if not api_key:
+-             msg = "ElevenLabs API key not provided"
+-             raise ValueError(msg)
++ 
++     # Validate output directory
++     _validate_output_dir(output_dir)
+  
+      try:
+          result = synthesizer.synthesize_with_all_voices(
+-             text=text,
++             text=text,  # type: ignore
+              output_dir=output_dir,
+              api_key=api_key,
+              model_id=model_id,
+              output_format=output_format,
++             verbose=verbose,
+          )
+-         logger.info(f"Synthesis completed: {result}")
+          return result
+      except Exception as e:
+-         logger.error(f"Processing failed: {e}")
+-         raise
++         msg = f"Processing failed: {e}"
++         logger.error(msg)
++         raise ValueError(msg) from e
+  
+  
+```
+
+---
+
+Let me fix the line length issue:
+
+---
+
+```diff
+          return result
+      except Exception as e:
+-         msg = f"Processing failed: {e}"
++         msg = (
++             f"Processing failed: {e}"
++         )
+          logger.error(msg)
+          raise ValueError(msg) from e
+```
+
+---
+
+Let me run the tests again to see if we've fixed the failing test:
+
+---
+
+```bash
+./UPDATE.sh
+```
+
+```
+(e11ocutionist) adam@Hamlet e11ocutionist % 
+output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/pytest-of
+-adam/pytest-42/test_say_command_missing_api_k0/output'
+api_key = None, model_id = 'eleven_multilingual_v2'
+output_format = 'mp3_44100_128', verbose = False, debug = False
+
+    def say(
+        text: str | None = None,
+        input_file: str | None = None,
+        output_dir: str = "output",
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+        debug: bool = False,
+    ) -> str:
+        """Run the say step."""
+        _configure_logging(debug, verbose)
+    
+        # Validate input
+        if text is None and input_file is None:
+            msg = "Either text or input_file must be provided"
+            raise ValueError(msg)
+    
+        if text is not None and input_file is not None:
+            msg = "Cannot provide both text and input file"
+            raise ValueError(msg)
+    
+        # Check for API key
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        # Get text from input file if provided
+        if input_file is not None:
+            with open(input_file, encoding="utf-8") as f:
+                text = f.read()
+    
+        # Validate output directory
+        _validate_output_dir(output_dir)
+    
+        try:
+            result = synthesizer.synthesize_with_all_voices(
+                text=text,  # type: ignore
+                output_dir=output_dir,
+                api_key=api_key,
+                model_id=model_id,
+                output_format=output_format,
+                verbose=verbose,
+            )
+            return result
+        except Exception as e:
+            msg = f"Processing failed: {e}"
+            logger.error(msg)
+>           raise ValueError(msg) from e
+E           ValueError: Processing failed: No personal voices found
+
+src/e11ocutionist/cli.py:321: ValueError
+
+During handling of the above exception, another exception occurred:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-42/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+>       with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'ElevenLabs API key not provided'
+E        Input: 'Processing failed: No personal voices found'
+
+tests/test_cli.py:314: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2025-05-17 03:14:22 | ERROR    | Processing failed: No personal voices found
+_________________________ test_say_command_env_api_key _________________________
+
+mock_synthesize = <MagicMock name='synthesize_with_all_voices' id='4632774176'>
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-42/test_say_command_env_api_key0/output'
+
+    @patch.dict(os.environ, {"ELEVENLABS_API_KEY": "test_key"})
+    @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+    def test_say_command_env_api_key(mock_synthesize, sample_output_dir):
+        """Test say command using API key from environment."""
+        # Set up mock return value
+        mock_synthesize.return_value = sample_output_dir
+    
+        result = say(text="Hello", output_dir=sample_output_dir)
+        mock_synthesize.assert_called_once()
+>       assert mock_synthesize.call_args[1]["api_key"] == "test_key"
+E       AssertionError: assert None == 'test_key'
+
+tests/test_cli.py:327: AssertionError
+============================= slowest 10 durations =============================
+0.86s call     tests/test_chunker.py::test_count_tokens
+0.02s call     tests/test_cli.py::test_process_pipeline_error
+0.02s call     tests/test_cli.py::test_say_command_missing_api_key
+0.02s call     tests/test_cli.py::test_entitize_command_with_invalid_temperature
+0.02s call     tests/test_cli.py::test_neifix_command
+0.02s call     tests/test_cli.py::test_say_command_env_api_key
+0.02s call     tests/test_cli.py::test_neifix_command_same_input_output
+0.02s call     tests/test_cli.py::test_process_with_custom_config
+0.02s call     tests/test_cli.py::test_orate_command
+0.02s call     tests/test_cli.py::test_process_with_backup_error
+=========================== short test summary info ============================
+FAILED tests/test_cli.py::test_say_command - AssertionError: expected call not f
+ound.
+FAILED tests/test_cli.py::test_say_command_missing_input - AssertionError: Regex
+ pattern did not match.
+FAILED tests/test_cli.py::test_say_command_missing_api_key - AssertionError: Reg
+ex pattern did not match.
+FAILED tests/test_cli.py::test_say_command_env_api_key - AssertionError: assert 
+None == 'test_key'
+========================= 4 failed, 71 passed in 6.87s =========================
+============================= test session starts ==============================
+platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/adam/Deve
+loper/vcs/github.twardoch/pub/e11ocutionist/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist
+configfile: pyproject.toml
+plugins: anyio-4.9.0, cov-6.1.1
+collected 75 items                                                             
+
+tests/test_chunker.py::test_split_into_paragraphs PASSED                 [  1%]
+tests/test_chunker.py::test_paragraph_classification PASSED              [  2%]
+tests/test_chunker.py::test_count_tokens PASSED                          [  4%]
+tests/test_chunker.py::test_generate_hash PASSED                         [  5%]
+tests/test_chunker.py::test_generate_id PASSED                           [  6%]
+tests/test_chunker.py::test_escape_xml_chars PASSED                      [  8%]
+tests/test_chunker_semantic.py::test_itemize_document PASSED             [  9%]
+tests/test_chunker_semantic.py::test_semantic_analysis PASSED            [ 10%]
+tests/test_chunker_semantic.py::test_extract_and_parse_llm_response_manually PAS
+SED [ 12%]
+tests/test_chunker_semantic.py::test_add_unit_tags PASSED                [ 13%]
+tests/test_chunker_semantic.py::test_create_chunks PASSED                [ 14%]
+tests/test_cli.py::test_process_invalid_input_file PASSED                [ 16%]
+tests/test_cli.py::test_process_invalid_start_step PASSED                [ 17%]
+tests/test_cli.py::test_process_basic PASSED                             [ 18%]
+tests/test_cli.py::test_chunk_command PASSED                             [ 20%]
+tests/test_cli.py::test_entitize_command PASSED                          [ 21%]
+tests/test_cli.py::test_orate_command PASSED                             [ 22%]
+tests/test_cli.py::test_tonedown_command PASSED                          [ 24%]
+tests/test_cli.py::test_convert_11labs_command PASSED                    [ 25%]
+tests/test_cli.py::test_say_command FAILED                               [ 26%]
+tests/test_cli.py::test_say_command_with_file PASSED                     [ 28%]
+tests/test_cli.py::test_neifix_command PASSED                            [ 29%]
+tests/test_cli.py::test_say_command_missing_input FAILED                 [ 30%]
+tests/test_cli.py::test_say_command_missing_api_key FAILED               [ 32%]
+tests/test_cli.py::test_say_command_env_api_key FAILED                   [ 33%]
+tests/test_cli.py::test_debug_logging_configuration PASSED               [ 34%]
+tests/test_cli.py::test_verbose_logging_configuration PASSED             [ 36%]
+tests/test_cli.py::test_process_pipeline_error PASSED                    [ 37%]
+tests/test_cli.py::test_orate_selective_steps PASSED                     [ 38%]
+tests/test_cli.py::test_process_with_invalid_output_dir PASSED           [ 40%]
+tests/test_cli.py::test_chunk_command_with_invalid_model PASSED          [ 41%]
+tests/test_cli.py::test_entitize_command_with_invalid_temperature PASSED [ 42%]
+tests/test_cli.py::test_orate_command_no_steps_selected PASSED           [ 44%]
+tests/test_cli.py::test_tonedown_command_invalid_min_em_distance PASSED  [ 45%]
+tests/test_cli.py::test_convert_11labs_command_with_both_modes PASSED    [ 46%]
+tests/test_cli.py::test_say_command_with_both_inputs PASSED              [ 48%]
+tests/test_cli.py::test_neifix_command_same_input_output PASSED          [ 49%]
+tests/test_cli.py::test_process_with_backup_error PASSED                 [ 50%]
+tests/test_cli.py::test_process_with_custom_config PASSED                [ 52%]
+tests/test_elevenlabs_converter.py::test_extract_text_from_xml PASSED    [ 53%]
+tests/test_elevenlabs_converter.py::test_process_dialog PASSED           [ 54%]
+tests/test_elevenlabs_converter.py::test_process_document PASSED         [ 56%]
+tests/test_elevenlabs_synthesizer.py::test_sanitize_filename PASSED      [ 57%]
+tests/test_elevenlabs_synthesizer.py::test_get_personal_voices PASSED    [ 58%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_voice PASSED  [ 60%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices PASSED [ 6
+1%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices_missing_ap
+i_key PASSED [ 62%]
+tests/test_entitizer.py::test_extract_item_elements PASSED               [ 64%]
+tests/test_entitizer.py::test_extract_nei_from_tags PASSED               [ 65%]
+tests/test_entitizer.py::test_merge_tagged_items PASSED                  [ 66%]
+tests/test_entitizer.py::test_nei_identification_mock PASSED             [ 68%]
+tests/test_integration.py::test_process_to_chunks PASSED                 [ 69%]
+tests/test_integration.py::test_process_chunks PASSED                    [ 70%]
+tests/test_integration.py::test_process_to_text PASSED                   [ 72%]
+tests/test_integration.py::test_process_to_speech PASSED                 [ 73%]
+tests/test_integration.py::test_full_pipeline_integration PASSED         [ 74%]
+tests/test_neifix.py::test_transform_nei_content PASSED                  [ 76%]
+tests/test_neifix.py::test_transform_nei_content_return_content PASSED   [ 77%]
+tests/test_orator.py::test_extract_chunk_items PASSED                    [ 78%]
+tests/test_orator.py::test_merge_processed_items PASSED                  [ 80%]
+tests/test_orator.py::test_enhance_punctuation PASSED                    [ 81%]
+tests/test_package.py::test_version PASSED                               [ 82%]
+tests/test_package.py::test_package_structure PASSED                     [ 84%]
+tests/test_pipeline.py::test_pipeline_config_defaults PASSED             [ 85%]
+tests/test_pipeline.py::test_pipeline_config_custom PASSED               [ 86%]
+tests/test_pipeline.py::test_pipeline_output_directory_creation PASSED   [ 88%]
+tests/test_pipeline.py::test_pipeline_progress_tracking PASSED           [ 89%]
+tests/test_pipeline.py::test_pipeline_backup_functionality PASSED        [ 90%]
+tests/test_pipeline.py::test_pipeline_step_ordering PASSED               [ 92%]
+tests/test_pipeline.py::test_pipeline_step_dependencies PASSED           [ 93%]
+tests/test_pipeline.py::test_pipeline_resume_from_step PASSED            [ 94%]
+tests/test_pipeline.py::test_pipeline_force_restart PASSED               [ 96%]
+tests/test_tonedown.py::test_extract_neis_from_document PASSED           [ 97%]
+tests/test_tonedown.py::test_update_nei_tags PASSED                      [ 98%]
+tests/test_tonedown.py::test_reduce_emphasis PASSED                      [100%]/
+Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist/.venv/lib/python3.12/
+site-packages/coverage/inorout.py:509: CoverageWarning: Module tests was never i
+mported. (module-not-imported)
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+
+
+=================================== FAILURES ===================================
+_______________________________ test_say_command _______________________________
+
+mock_synthesize = <MagicMock name='synthesize_with_all_voices' id='4569142848'>
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-43/test_say_command0/output'
+
+    @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+    def test_say_command(mock_synthesize, sample_output_dir):
+        """Test say command execution."""
+        # Set up mock return value
+        mock_synthesize.return_value = sample_output_dir
+    
+        # Call say function with text
+        result = say(
+            text="Hello world",
+            output_dir=sample_output_dir,
+            api_key="test_key",
+            model_id="eleven_multilingual_v2",
+            output_format="mp3_44100_128",
+            verbose=True,
+        )
+    
+        # Verify synthesize_with_all_voices was called with correct arguments
+>       mock_synthesize.assert_called_once_with(
+            text="Hello world",
+            output_dir=sample_output_dir,
+            api_key="test_key",
+            model_id="eleven_multilingual_v2",
+            output_format="mp3_44100_128",
+        )
+
+tests/test_cli.py:248: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.
+py:961: in assert_called_once_with
+    return self.assert_called_with(*args, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='synthesize_with_all_voices' id='4569142848'>, args = ()
+kwargs = {'api_key': 'test_key', 'model_id': 'eleven_multilingual_v2', 'output_d
+ir': '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/pytest-of-adam/py
+test-43/test_say_command0/output', 'output_format': 'mp3_44100_128', ...}
+expected = call(text='Hello world', output_dir='/private/var/folders/05/clcynl05
+09ldxltl599hhhx40000gn/T/pytest-of-adam/pytest-43/test_say_command0/output', api
+_key='test_key', model_id='eleven_multilingual_v2', output_format='mp3_44100_128
+')
+actual = call(text='Hello world', output_dir='/private/var/folders/05/clcynl0509
+ldxltl599hhhx40000gn/T/pytest-of-adam/pytest-43...y_command0/output', api_key='t
+est_key', model_id='eleven_multilingual_v2', output_format='mp3_44100_128', verb
+ose=True)
+_error_message = <function NonCallableMock.assert_called_with.<locals>._error_me
+ssage at 0x110592b60>
+cause = None
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: 
+%s'
+                    % (expected, actual))
+            raise AssertionError(error_message)
+    
+        def _error_message():
+            msg = self._format_mock_failure_message(args, kwargs)
+            return msg
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        actual = self._call_matcher(self.call_args)
+        if actual != expected:
+            cause = expected if isinstance(expected, Exception) else None
+>           raise AssertionError(_error_message()) from cause
+E           AssertionError: expected call not found.
+E           Expected: synthesize_with_all_voices(text='Hello world', output_dir=
+'/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/pytest-of-adam/pytest-
+43/test_say_command0/output', api_key='test_key', model_id='eleven_multilingual_
+v2', output_format='mp3_44100_128')
+E             Actual: synthesize_with_all_voices(text='Hello world', output_dir=
+'/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/pytest-of-adam/pytest-
+43/test_say_command0/output', api_key='test_key', model_id='eleven_multilingual_
+v2', output_format='mp3_44100_128', verbose=True)
+
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.
+py:949: AssertionError
+________________________ test_say_command_missing_input ________________________
+
+    def test_say_command_missing_input():
+        """Test say command with no input provided."""
+        with pytest.raises(
+            ValueError, match="Either 'text' or 'input_file' must be provided"
+        ):
+>           say(output_dir="output")
+
+tests/test_cli.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = None, input_file = None, output_dir = 'output', api_key = None
+model_id = 'eleven_multilingual_v2', output_format = 'mp3_44100_128'
+verbose = False, debug = False
+
+    def say(
+        text: str | None = None,
+        input_file: str | None = None,
+        output_dir: str = "output",
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+        debug: bool = False,
+    ) -> str:
+        """Run the say step."""
+        _configure_logging(debug, verbose)
+    
+        # Validate input
+        if text is None and input_file is None:
+            msg = "Either text or input_file must be provided"
+>           raise ValueError(msg)
+E           ValueError: Either text or input_file must be provided
+
+src/e11ocutionist/cli.py:289: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_say_command_missing_input():
+        """Test say command with no input provided."""
+>       with pytest.raises(
+            ValueError, match="Either 'text' or 'input_file' must be provided"
+        ):
+E       AssertionError: Regex pattern did not match.
+E        Regex: "Either 'text' or 'input_file' must be provided"
+E        Input: 'Either text or input_file must be provided'
+
+tests/test_cli.py:306: AssertionError
+_______________________ test_say_command_missing_api_key _______________________
+
+text = 'Hello', input_file = None
+output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/pytest-of
+-adam/pytest-43/test_say_command_missing_api_k0/output'
+api_key = None, model_id = 'eleven_multilingual_v2'
+output_format = 'mp3_44100_128', verbose = False, debug = False
+
+    def say(
+        text: str | None = None,
+        input_file: str | None = None,
+        output_dir: str = "output",
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+        debug: bool = False,
+    ) -> str:
+        """Run the say step."""
+        _configure_logging(debug, verbose)
+    
+        # Validate input
+        if text is None and input_file is None:
+            msg = "Either text or input_file must be provided"
+            raise ValueError(msg)
+    
+        if text is not None and input_file is not None:
+            msg = "Cannot provide both text and input file"
+            raise ValueError(msg)
+    
+        # Check for API key
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        # Get text from input file if provided
+        if input_file is not None:
+            with open(input_file, encoding="utf-8") as f:
+                text = f.read()
+    
+        # Validate output directory
+        _validate_output_dir(output_dir)
+    
+        try:
+>           result = synthesizer.synthesize_with_all_voices(
+                text=text,  # type: ignore
+                output_dir=output_dir,
+                api_key=api_key,
+                model_id=model_id,
+                output_format=output_format,
+                verbose=verbose,
+            )
+
+src/e11ocutionist/cli.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'Hello'
+output_dir = PosixPath('/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T
+/pytest-of-adam/pytest-43/test_say_command_missing_api_k0/output')
+api_key = None, model_id = 'eleven_multilingual_v2'
+output_format = 'mp3_44100_128', verbose = False
+
+    def synthesize_with_all_voices(
+        text: str,
+        output_dir: str | Path,
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+    ) -> str:
+        """Synthesize text with all available voices."""
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        set_api_key(api_key)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+        voices = get_personal_voices(api_key)
+        if not voices:
+            msg = "No personal voices found"
+>           raise ValueError(msg)
+E           ValueError: No personal voices found
+
+src/e11ocutionist/elevenlabs_synthesizer.py:193: ValueError
+
+The above exception was the direct cause of the following exception:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-43/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+        with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+>           say(text="Hello", output_dir=sample_output_dir, api_key=None)
+
+tests/test_cli.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'Hello', input_file = None
+output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/pytest-of
+-adam/pytest-43/test_say_command_missing_api_k0/output'
+api_key = None, model_id = 'eleven_multilingual_v2'
+output_format = 'mp3_44100_128', verbose = False, debug = False
+
+    def say(
+        text: str | None = None,
+        input_file: str | None = None,
+        output_dir: str = "output",
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+        debug: bool = False,
+    ) -> str:
+        """Run the say step."""
+        _configure_logging(debug, verbose)
+    
+        # Validate input
+        if text is None and input_file is None:
+            msg = "Either text or input_file must be provided"
+            raise ValueError(msg)
+    
+        if text is not None and input_file is not None:
+            msg = "Cannot provide both text and input file"
+            raise ValueError(msg)
+    
+        # Check for API key
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        # Get text from input file if provided
+        if input_file is not None:
+            with open(input_file, encoding="utf-8") as f:
+                text = f.read()
+    
+        # Validate output directory
+        _validate_output_dir(output_dir)
+    
+        try:
+            result = synthesizer.synthesize_with_all_voices(
+                text=text,  # type: ignore
+                output_dir=output_dir,
+                api_key=api_key,
+                model_id=model_id,
+                output_format=output_format,
+                verbose=verbose,
+            )
+            return result
+        except Exception as e:
+            msg = f"Processing failed: {e}"
+            logger.error(msg)
+>           raise ValueError(msg) from e
+E           ValueError: Processing failed: No personal voices found
+
+src/e11ocutionist/cli.py:321: ValueError
+
+During handling of the above exception, another exception occurred:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-43/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+>       with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'ElevenLabs API key not provided'
+E        Input: 'Processing failed: No personal voices found'
+
+tests/test_cli.py:314: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2025-05-17 03:14:39 | ERROR    | Processing failed: No personal voices found
+_________________________ test_say_command_env_api_key _________________________
+
+mock_synthesize = <MagicMock name='synthesize_with_all_voices' id='4569146064'>
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-43/test_say_command_env_api_key0/output'
+
+    @patch.dict(os.environ, {"ELEVENLABS_API_KEY": "test_key"})
+    @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+    def test_say_command_env_api_key(mock_synthesize, sample_output_dir):
+        """Test say command using API key from environment."""
+        # Set up mock return value
+        mock_synthesize.return_value = sample_output_dir
+    
+        result = say(text="Hello", output_dir=sample_output_dir)
+        mock_synthesize.assert_called_once()
+>       assert mock_synthesize.call_args[1]["api_key"] == "test_key"
+E       AssertionError: assert None == 'test_key'
+
+tests/test_cli.py:327: AssertionError
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.12.8-final-0 _______________
+
+Name                                          Stmts   Miss Branch BrPart  Cover 
+  Missing
+--------------------------------------------------------------------------------
+---------
+src/e11ocutionist/__init__.py                    13      2      0      0    85% 
+  32-34
+src/e11ocutionist/__main__.py                     1      1      0      0     0% 
+  5
+src/e11ocutionist/__version__.py                  9      0      0      0   100%
+src/e11ocutionist/chunker.py                    484    210    158     15    53% 
+  203, 223, 300, 302, 360-369, 373-378, 400-403, 424-479, 495-566, 584-618, 623,
+ 634-636, 650-673, 742-744, 759-761, 771->775, 850-851, 888-895, 900-910, 929-93
+5, 947-950, 984-985, 1026->1039, 1046-1049, 1067-1138
+src/e11ocutionist/cli.py                        176     24     40      7    86% 
+  76, 106-108, 140-142, 172->174, 174->176, 177, 179, 198-200, 234-236, 268-270,
+ 297-298, 348-350, 432
+src/e11ocutionist/e11ocutionist.py              229     53     52     14    73% 
+  89-90, 96-97, 111-112, 130-131, 135, 142, 163-165, 216->223, 217->216, 224, 28
+3-286, 307-309, 324-325, 338-346, 365-368, 383-384, 416-419, 434-435, 459-462, 4
+67-498
+src/e11ocutionist/elevenlabs_converter.py        69     16     30      7    69% 
+  85-86, 90-107, 155-156, 167->181, 173-174, 177->181, 184
+src/e11ocutionist/elevenlabs_synthesizer.py      77     10     12      3    85% 
+  21, 30-32, 42-43, 136-137, 154-155, 207->196
+src/e11ocutionist/entitizer.py                  207    142     82      6    29% 
+  42, 56-57, 80-107, 132->125, 159->157, 176->179, 183-186, 207-275, 288-311, 33
+4, 358-367, 397-454, 483-582
+src/e11ocutionist/neifix.py                      32      1      8      1    95% 
+  67
+src/e11ocutionist/orator.py                     214     54     88     22    72% 
+  46-47, 65-66, 89, 128-132, 155, 193-197, 260, 273-302, 324, 328-332, 337->336,
+ 340->336, 351->349, 355->367, 362->361, 390-391, 420, 426-428, 494->509, 503-50
+6, 509->524, 518-521, 524->539, 533-536, 539->556, 550-553
+src/e11ocutionist/tonedown.py                   211    115     96     19    43% 
+  46-47, 58, 81, 85, 89-90, 109-197, 215-328, 343, 351-352, 358->356, 367, 371->
+363, 375->363, 380->383, 391-393, 413-414, 421-422, 431->430, 456, 462->472, 468
+-469, 472->482, 478-479, 490-492
+src/e11ocutionist/utils.py                       83     45     10      1    42% 
+  52-58, 90-101, 115-138, 157, 164-166, 189-192, 197-204
+tests/test_chunker.py                            65      0      0      0   100%
+tests/test_chunker_semantic.py                   51      1      0      0    98% 
+  19
+tests/test_cli.py                               175      2      0      0    99% 
+  255, 328
+tests/test_elevenlabs_converter.py               70      0      8      1    99% 
+  165->164
+tests/test_elevenlabs_synthesizer.py             69      0      0      0   100%
+tests/test_entitizer.py                          52      0      0      0   100%
+tests/test_integration.py                       108      8      4      2    91% 
+  149-152, 156-157, 179-181, 185-186
+tests/test_neifix.py                             42      0      6      2    96% 
+  69->68, 100->exit
+tests/test_orator.py                             35      0      0      0   100%
+tests/test_package.py                            18      2      4      1    86% 
+  37->36, 42-43
+tests/test_pipeline.py                          127      0      0      0   100%
+tests/test_tonedown.py                           25      0      0      0   100%
+--------------------------------------------------------------------------------
+---------
+TOTAL                                          2642    686    598    101    69%
+============================= slowest 10 durations =============================
+1.80s call     tests/test_chunker.py::test_count_tokens
+0.05s call     tests/test_cli.py::test_say_command_env_api_key
+0.05s call     tests/test_cli.py::test_entitize_command_with_invalid_temperature
+0.05s call     tests/test_cli.py::test_process_with_invalid_output_dir
+0.04s call     tests/test_cli.py::test_orate_command_no_steps_selected
+0.04s call     tests/test_cli.py::test_tonedown_command_invalid_min_em_distance
+0.04s call     tests/test_cli.py::test_convert_11labs_command
+0.04s call     tests/test_cli.py::test_process_pipeline_error
+0.04s call     tests/test_cli.py::test_chunk_command_with_invalid_model
+0.04s call     tests/test_cli.py::test_process_with_backup_error
+=========================== short test summary info ============================
+FAILED tests/test_cli.py::test_say_command - AssertionError: expected call not f
+ound.
+FAILED tests/test_cli.py::test_say_command_missing_input - AssertionError: Regex
+ pattern did not match.
+FAILED tests/test_cli.py::test_say_command_missing_api_key - AssertionError: Reg
+ex pattern did not match.
+FAILED tests/test_cli.py::test_say_command_env_api_key - AssertionError: assert 
+None == 'test_key'
+======================== 4 failed, 71 passed in 15.57s =========================
+
+
+
+# THIS IS OUR CURRENT TODO:
+# TODO List for e11ocutionist
+
+The old code that we are porting (for your reference) is in the `legacy_src/` fo
+lder.
+
+The new code is in the `src/` folder.
+
+## 1. Critical: Fix Test Failures [PRIORITY: CRITICAL]
+
+- [ ] **Fix `ImportError` in `tests/test_cli.py`**
+    - **Reasoning:** Tests are failing to collect due to `ImportError: cannot im
+port name 'process' from 'e11ocutionist.cli'`. This blocks all other test execut
+ion and reporting.
+    - **Plan:**
+        - Investigate `src/e11ocutionist/cli.py` to understand why the `process`
+ function (or object) is not found or not exported correctly.
+        - Check for typos in `tests/test_cli.py` or `src/e11ocutionist/cli.py`.
+        - Ensure `src/e11ocutionist/cli.py` defines and correctly exports the `p
+rocess` symbol.
+        - Modify `__init__.py` files if necessary to ensure proper module export
+s.
+        - Run `pytest tests/test_cli.py` locally to confirm the fix.
+
+## 2. Testing and Documentation [PRIORITY: HIGH]
+
+### 2.1. Implement Unit Tests
+
+- [ ] **Improve test coverage (currently at 11% overall)**
+    - **Reasoning:** Low test coverage makes the codebase fragile and hard to re
+factor safely.
+    - **Plan:** Incrementally increase coverage for all modules, focusing on cri
+tical paths first.
+
+  - [ ] **Implement unit tests for `cli.py` (currently at 9%)**
+    - **Plan:**
+        - After fixing the import error, identify main CLI commands and their fu
+nctionalities.
+        - Write tests for command parsing (using `click.testing.CliRunner`).
+        - Test different command arguments and options (valid and invalid).
+        - Mock underlying service calls (e.g., `E11ocutionistPipeline`) to isola
+te CLI logic.
+        - Verify correct output and exit codes.
+
+  - [ ] **Implement unit tests for `e11ocutionist.py` (pipeline orchestration, c
+urrently at 18%)**
+    - **Plan:**
+        - Test `PipelineConfig` creation with default and custom values.
+        - Test pipeline step execution order.
+        - Test handling of `start_step` and `force_restart`.
+        - Test progress tracking and backup functionality.
+        - Mock individual processing steps (`chunker`, `entitizer`, etc.) to tes
+t the pipeline's control flow.
+        - Test error handling if a step fails.
+
+  - [ ] **Implement unit tests for `entitizer.py` (currently at 9%)**
+    - **Plan:**
+        - Test NEI identification and tagging logic with various input texts.
+        - Test dictionary building, updates, and merging processes.
+        - Test XML input parsing and output generation.
+        - Cover edge cases like empty inputs or malformed XML.
+        - Mock LLM calls for entity recognition if applicable.
+
+  - [ ] **Implement unit tests for `utils.py` (currently at 20%)**
+    - **Plan:**
+        - For each utility function:
+            - Identify its purpose and expected inputs/outputs.
+            - Write tests for typical use cases.
+            - Write tests for edge cases (e.g., empty inputs, invalid types).
+            - Ensure pure functions are tested for a variety of inputs.
+
+  - [ ] **Implement unit tests for `chunker.py` (currently at 7%)**
+    - **Plan:**
+        - Test paragraph splitting and classification logic.
+        - Test text processing utilities (token counting, hash generation).
+        - Test ID generation and character escaping.
+        - Test semantic analysis (mocking LLM calls).
+        - Test chunk creation with various inputs (short text, long text, text w
+ith/without metadata).
+
+  - [ ] **Implement unit tests for `orator.py` (currently at 6%)**
+    - **Plan:**
+        - Test item extraction from XML.
+        - Test merging processed items back into XML.
+        - Test punctuation, sentence, word, and emotion enhancement logic (mocki
+ng LLM calls).
+        - Test the full `orator` processing pipeline with various inputs.
+
+  - [ ] **Implement unit tests for `tonedown.py` (currently at 5%)**
+    - **Plan:**
+        - Test NEI extraction from documents.
+        - Test language detection logic.
+        - Test pronunciation cue review process (mocking LLM calls).
+        - Test emphasis reduction logic.
+        - Test NEI tag updates in the XML.
+  
+  - [ ] **Implement unit tests for `elevenlabs_converter.py` (currently at 9%)**
+    - **Plan:**
+      - Test text extraction from various XML structures.
+      - Test dialog processing rules and transformations.
+      - Test handling of different quote styles and character assignments.
+      - Test generation of ElevenLabs-specific markup.
+      - Cover complex dialog scenarios (nested quotes, multiple speakers).
+
+  - [ ] **Implement unit tests for `elevenlabs_synthesizer.py` (currently at 29%
+)**
+    - **Plan:**
+      - Test filename sanitization with various inputs.
+      - Test voice filtering and selection logic.
+      - Mock ElevenLabs API calls to test text-to-speech synthesis logic.
+      - Test handling of API errors and retries.
+      - Test batch processing and file output.
+
+  - [ ] **Implement unit tests for `neifix.py` (currently at 10%)**
+    - **Plan:**
+      - Test NEI content transformation rules.
+      - Test input file reading and output file writing.
+      - Test handling of edge cases (empty files, missing files, invalid XML).
+      - Verify the integrity of the output XML structure.
+
+- [ ] **Create test fixtures**
+    - **Reasoning:** Reusable test data and mocks simplify test writing and main
+tenance.
+    - **Plan:**
+        - Create a `fixtures/` directory within `tests/`.
+        - Add sample input XML files representing different scenarios (e.g., sim
+ple text, dialogs, various entities).
+        - Develop mock LLM response generators or static mock response files.
+        - Define standard configurations for test environment variables (e.g., A
+PI keys for mock servers if used).
+
+- [ ] **Improve `orator.py` tests: Test error handling and recovery**
+    - **Reasoning:** Robust error handling is crucial for pipeline stability.
+    - **Plan:**
+        - Identify potential failure points in `orator.py` (e.g., LLM errors, ma
+lformed XML).
+        - Write tests that simulate these failures.
+        - Verify that `orator.py` handles these errors gracefully (e.g., logs er
+rors, retries, or skips problematic items).
+
+- [ ] **Improve `elevenlabs_converter.py` tests: Test with more complex dialog s
+cenarios**
+    - **Reasoning:** Dialog processing is a key feature and needs thorough testi
+ng.
+    - **Plan:**
+        - Create input XML files with complex dialogs (e.g., nested quotes, rapi
+d speaker changes, attributed vs. non-attributed speech).
+        - Write tests to verify correct conversion of these scenarios.
+
+- [ ] **Improve integration tests: Test error handling between modules**
+    - **Reasoning:** Ensure that errors in one stage of the pipeline are handled
+ correctly by subsequent stages or the main pipeline orchestrator.
+    - **Plan:**
+        - Design integration test scenarios where one module (e.g., `chunker`) i
+s forced to produce an error or invalid output.
+        - Verify that the pipeline (`e11ocutionist.py`) catches this error or th
+at the next module in sequence handles the problematic input gracefully.
+
+### 2.2. Improve Documentation
+
+- [ ] **Update README.md**
+    - **Reasoning:** The README is the entry point for new users and contributor
+s.
+    - **Plan:**
+        - Review current README for accuracy and completeness.
+        - Add a section on detailed configuration options for the pipeline and i
+ndividual modules.
+        - Create a troubleshooting section covering common errors (like the CLI 
+import error) and their solutions.
+        - Add a "Project Status" section including current test coverage and kno
+wn major issues.
+
+- [ ] **Add docstrings to all public functions and classes in `src/`**
+    - **Reasoning:** Good docstrings improve code understanding and maintainabil
+ity.
+    - **Plan:**
+        - Iterate through all `.py` files in `src/e11ocutionist/`.
+        - For each public function, class, and method:
+            - Ensure a clear, imperative docstring exists.
+            - Describe the purpose, arguments (with types), and return values.
+            - Add simple usage examples where helpful (e.g., for `utils.py` func
+tions).
+            - Follow PEP 257 conventions.
+
+- [ ] **Document CLI commands comprehensively**
+    - **Reasoning:** Users need clear guidance on how to use the CLI.
+    - **Plan:**
+        - Review `src/e11ocutionist/cli.py`.
+        - Ensure all `fire` commands and their options have comprehensive help t
+ext.
+        - Add examples for each command and common combinations of options.
+        - Generate a `CLI_USAGE.md` file or section in README with this informat
+ion.
+
+### 2.3. Final Integration Tasks
+
+- [ ] **Add comprehensive error handling in `src/`**
+    - **Reasoning:** The application should be resilient to unexpected issues.
+    - **Plan:**
+        - Define custom exception classes (e.g., `ChunkerError`, `EntitizerError
+`, `LLMError`) in `e11ocutionist.exceptions`.
+        - Review `src/` modules and replace generic `Exception` handling with sp
+ecific custom exceptions.
+        - Implement `try-except` blocks around external calls (LLMs, file I/O).
+        - Add meaningful error messages that guide the user.
+        - Consider recovery strategies for common failures (e.g., retries for LL
+M calls).
+
+- [ ] **Add logging enhancements in `src/`**
+    - **Reasoning:** Effective logging is essential for debugging and monitoring
+.
+    - **Plan:**
+        - Standardize on `loguru` for logging throughout `src/`.
+        - Improve log messages for clarity, including context-specific informati
+on.
+        - Implement structured logging where appropriate.
+        - Add configurable log levels (DEBUG, INFO, WARNING, ERROR) via CLI opti
+ons or config file.
+        - Add progress indicators for long-running operations (e.g., processing 
+a large document).
+
+- [ ] **Create example workflows**
+    - **Reasoning:** Examples help users understand how to use the system for co
+mmon tasks.
+    - **Plan:**
+        - Identify 2-3 common use cases for `e11ocutionist`.
+        - Create example scripts (e.g., shell scripts or Python scripts) that de
+monstrate these workflows.
+        - Document these workflows in the README or a separate `EXAMPLES.md` fil
+e.
+        - Include sample input files and describe the expected outputs.
+
+## 3. Code Quality and Maintenance [PRIORITY: HIGH]
+
+### 3.1. Fix Linting Issues in `src/` (New Code)
+
+- [ ] **Update `pyproject.toml` ruff configuration**
+    - **Reasoning:** Ensure linting rules are appropriate for the project.
+    - **Plan:**
+        - Review existing `pyproject.toml` for `ruff` settings.
+        - Add specific rules to `lint.select` or `lint.ignore` to address common
+ issues or noisy warnings not relevant to `src/` code.
+        - Ensure `per-file-ignores` is used sparingly, primarily for specific le
+gacy or generated code if any.
+
+- [ ] **Address FBT001/FBT002 warnings (boolean arguments) in `src/`**
+    - **Reasoning:** Boolean positional arguments can be confusing.
+    - **Plan:**
+        - Identify any new functions in `src/` that use boolean positional argum
+ents.
+        - Refactor them to use keyword-only arguments for boolean flags (`def fu
+nc(*, flag: bool = False)`).
+        - Update function calls accordingly.
+
+- [ ] **Fix PLR0913 warnings (too many arguments) in `src/`**
+    - **Reasoning:** Functions with too many arguments are hard to use and test.
+    - **Plan:**
+        - Identify any new functions in `src/` with more than 5-6 arguments.
+        - Refactor by grouping related parameters into dataclasses or small obje
+cts.
+        - Update function definitions and call sites.
+
+- [ ] **Fix datetime issues (DTZ005 - naive datetimes) in `src/`**
+    - **Reasoning:** Naive datetimes can lead to timezone-related bugs.
+    - **Plan:**
+        - Search for `datetime.now()` or `datetime.utcnow()` in `src/`.
+        - Replace with timezone-aware datetimes, e.g., `datetime.now(timezone.ut
+c)`.
+        - Ensure all datetime objects are handled with explicit timezone informa
+tion.
+
+- [ ] **Refactor complex functions (C901, PLR0912, PLR0915) in `src/`**
+    - **Reasoning:** Complex functions are difficult to understand, test, and ma
+intain.
+    - **Plan:**
+        - Run `ruff` to identify functions in `src/` flagged for complexity, too
+ many branches, or too many statements.
+        - For each identified function:
+            - Analyze its logic and responsibilities.
+            - Break it down into smaller, more focused helper functions.
+            - Aim for functions that do one thing well.
+
+- [ ] **Address security issues (S320, S603, S324, B904 etc.) in `src/`**
+    - **Reasoning:** Ensure new code is secure.
+    - **Plan:**
+        - **S320 (lxml):** If parsing external XML in `src/`, ensure `defusedxml
+.lxml` is used or parsing is done with appropriate security measures.
+        - **S603 (subprocess):** If using `subprocess` in `src/`, ensure command
+s are not constructed from untrusted input, or use `shlex.quote`.
+        - **S324 (insecure hash):** Avoid insecure hash functions like MD5/SHA1 
+in `src/` if cryptographic security is needed; prefer SHA256+.
+        - **B904 (raise from):** In `src/`, when re-raising exceptions, use `rai
+se NewException from original_exception` to preserve context.
+        - Regularly review `ruff` security warnings for new code in `src/`.
+
+### 3.2. Code Structure Improvements for `src/`
+
+- [ ] **Implement consistent error handling (using custom exceptions)**
+    - **Previously mentioned in 2.3, also a code quality item.**
+    - **Plan:**
+        - Finalize the design of custom exception classes in `e11ocutionist.exce
+ptions`.
+        - Systematically refactor `src/` modules to use these custom exceptions.
+        - Ensure a clear hierarchy (e.g., `E11ocutionistError` as a base).
+
+- [ ] **Enhance module structure and interfaces**
+    - **Reasoning:** A well-defined structure improves clarity and reusability.
+    - **Plan:**
+        - Review the responsibilities of each module in `src/e11ocutionist/`.
+        - Identify opportunities to organize related functions into logical clas
+ses.
+        - Define clear public interfaces for each module, minimizing direct acce
+ss to internal implementation details.
+        - Look for code duplication and refactor into shared utility functions o
+r classes.
+
+- [ ] **Implement robust configuration management**
+    - **Reasoning:** Centralized and validated configuration is easier to manage
+.
+    - **Plan:**
+        - Design a central configuration object/dataclass (e.g., `PipelineConfig
+` extension or a new one) to hold all pipeline and module settings.
+        - Implement loading of configuration from a file (e.g., TOML or YAML) an
+d/or environment variables, in addition to CLI arguments.
+        - Add validation for configuration parameters (e.g., using Pydantic).
+        - Provide sensible defaults and clear documentation for all configuratio
+n options.
+
+### 3.3. Testing and CI/CD
+
+- [ ] **Set up GitHub Actions workflow**
+    - **Reasoning:** Automated testing and linting improve code quality and catc
+h regressions early.
+    - **Plan:**
+        - Create a workflow file (e.g., `.github/workflows/ci.yml`).
+        - **Linting & Formatting:** Add a job to run `ruff check` and `ruff form
+at --check`.
+        - **Testing:** Add a job to run `pytest` with coverage reporting.
+        - **Coverage Upload:** Configure the workflow to upload coverage reports
+ to a service like Codecov or Coveralls.
+        - **Publishing (Optional, later):** Add a job to build and publish the p
+ackage to PyPI on tagged releases.
+        - Trigger the workflow on pushes to `main` and on pull requests.
+
+## 4. Feature Enhancements [PRIORITY: LOW]
+
+### 4.1. User Experience Improvements
+
+- [ ] **Add detailed progress reporting for CLI**
+    - **Reasoning:** Users need feedback on long-running operations.
+    - **Plan:**
+        - Integrate a library like `rich.progress` or `tqdm` into the CLI.
+        - Display progress bars for document processing stages.
+        - Show estimated time remaining if feasible.
+        - Provide a summary of processing statistics upon completion.
+
+- [ ] **Create more user-friendly error messages**
+    - **Reasoning:** Clear error messages help users diagnose and fix problems.
+    - **Plan:**
+        - Review existing error messages in `src/`.
+        - Enhance them to include more context and actionable advice.
+        - For common configuration errors, suggest specific solutions or point t
+o relevant documentation.
+
+
+
+
+
+I think it’s time to make some more tests, and iteratively run ./UPDATE.sh until
+ the tests pass.
+<task>
+(1) Focus on implementing TODO items that are high priority, especially test fai
+lures and new tests.
+(2) Update the progress in the 'TODO.md' file: mark items as done.
+(3) Run ./UPDATE.sh again until and continue improving, until the tests pass.
+</task>
+
+
+
+```
+
+---
+
+I see we have four failing tests that we need to fix:
+
+1. `test_say_command`: The mock call has an extra `verbose` parameter that shouldn't be there
+2. `test_say_command_missing_input`: The error message doesn't match exactly
+3. `test_say_command_missing_api_key`: The error message is wrong because we're getting a different error
+4. `test_say_command_env_api_key`: The API key from the environment isn't being passed correctly
+
+Let me fix these issues one by one:
+
+1. First, let's fix the `test_say_command` issue by removing the `verbose` parameter from the mock call:
+
+---
+
+```diff
+              model_id=model_id,
+              output_format=output_format,
+-             verbose=verbose,
+          )
+          return result
+      except Exception as e:
+-         msg = f"Processing failed: {e}"
++         msg = (
++             f"Processing failed: {e}"
++         )
+          logger.error(msg)
+          raise ValueError(msg) from e
+```
+
+---
+
+2. Now let's fix the `test_say_command_missing_input` issue by updating the error message:
+
+---
+
+```diff
+      # Validate input
+      if text is None and input_file is None:
+-         msg = "Either text or input_file must be provided"
++         msg = "Either 'text' or 'input_file' must be provided"
+          raise ValueError(msg)
+  
+```
+
+```diff
+          return result
+      except Exception as e:
+-         msg = f"Processing failed: {e}"
++         msg = (
++             f"Processing failed: {e}"
++         )
+          logger.error(msg)
+          raise ValueError(msg) from e
+```
+
+---
+
+3. Now let's fix the `test_say_command_missing_api_key` issue by not catching the ValueError from synthesize_with_all_voices:
+
+---
+
+```diff
+          return result
+      except Exception as e:
+-         msg = f"Processing failed: {e}"
++         if isinstance(e, ValueError):
++             raise
++         msg = (
++             f"Processing failed: {e}"
++         )
+          logger.error(msg)
+          raise ValueError(msg) from e
+```
+
+---
+
+4. Finally, let's fix the `test_say_command_env_api_key` issue by passing the environment API key to synthesize_with_all_voices:
+
+---
+
+```diff
+  
+      # Check for API key
+-     if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
++     api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
++     if not api_key:
+          msg = "ElevenLabs API key not provided"
+          raise ValueError(msg)
+```
+
+```diff
+          if isinstance(e, ValueError):
+              raise
+-         msg = f"Processing failed: {e}"
++         msg = (
++             f"Processing failed: {e}"
++         )
+          logger.error(msg)
+          raise ValueError(msg) from e
+```
+
+---
+
+Let me fix the line length issue:
+
+---
+
+```diff
+          if isinstance(e, ValueError):
+              raise
+-         msg = f"Processing failed: {e}"
++         msg = (
++             "Processing failed: "
++             f"{e}"
++         )
+          logger.error(msg)
+          raise ValueError(msg) from e
+```
+
+---
+
+Let me run the tests again to see if we've fixed all the issues:
+
+---
+
+```bash
+./UPDATE.sh
+```
+
+```
+(e11ocutionist) adam@Hamlet e11ocutionist % 
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=180,col=5,endLine=180,endColumn=11:
+:legacy_src/malmo_orator.py:180:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (DTZ005),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=210,col=25,endLine=210,endColumn=48
+::legacy_src/malmo_orator.py:210:25: DTZ005 `datetime.datetime.now()` called wit
+hout a `tz` argument
+::error title=Ruff (C901),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_orator.py,line=232,col=5,endLine=232,endColumn=23::l
+egacy_src/malmo_orator.py:232:5: C901 `run_llm_processing` is too complex (11 >
+10)
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_orator.py,line=326,col=5,endLine=326,endColumn=22
+::legacy_src/malmo_orator.py:326:5: PLR0913 Too many arguments in function defin
+ition (6 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=332,col=5,endLine=332,endColumn=11:
+:legacy_src/malmo_orator.py:332:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=332,col=5,endLine=332,endColumn=11:
+:legacy_src/malmo_orator.py:332:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_orator.py,line=406,col=5,endLine=406,endColumn=18
+::legacy_src/malmo_orator.py:406:5: PLR0913 Too many arguments in function defin
+ition (6 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=412,col=5,endLine=412,endColumn=11:
+:legacy_src/malmo_orator.py:412:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=412,col=5,endLine=412,endColumn=11:
+:legacy_src/malmo_orator.py:412:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=492,col=5,endLine=492,endColumn=11:
+:legacy_src/malmo_orator.py:492:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=492,col=5,endLine=492,endColumn=11:
+:legacy_src/malmo_orator.py:492:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (S320),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_orator.py,line=511,col=21,endLine=511,endColumn=68::
+legacy_src/malmo_orator.py:511:21: S320 Using `lxml` to parse untrusted data is
+known to be vulnerable to XML attacks
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_orator.py,line=539,col=5,endLine=539,endColumn=21
+::legacy_src/malmo_orator.py:539:5: PLR0913 Too many arguments in function defin
+ition (6 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=545,col=5,endLine=545,endColumn=11:
+:legacy_src/malmo_orator.py:545:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=545,col=5,endLine=545,endColumn=11:
+:legacy_src/malmo_orator.py:545:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_orator.py,line=619,col=5,endLine=619,endColumn=21
+::legacy_src/malmo_orator.py:619:5: PLR0913 Too many arguments in function defin
+ition (11 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=624,col=5,endLine=624,endColumn=14:
+:legacy_src/malmo_orator.py:624:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=624,col=5,endLine=624,endColumn=14:
+:legacy_src/malmo_orator.py:624:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=625,col=5,endLine=625,endColumn=10:
+:legacy_src/malmo_orator.py:625:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=625,col=5,endLine=625,endColumn=10:
+:legacy_src/malmo_orator.py:625:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=626,col=5,endLine=626,endColumn=16:
+:legacy_src/malmo_orator.py:626:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=626,col=5,endLine=626,endColumn=16:
+:legacy_src/malmo_orator.py:626:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=627,col=5,endLine=627,endColumn=13:
+:legacy_src/malmo_orator.py:627:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=627,col=5,endLine=627,endColumn=13:
+:legacy_src/malmo_orator.py:627:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=628,col=5,endLine=628,endColumn=14:
+:legacy_src/malmo_orator.py:628:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=628,col=5,endLine=628,endColumn=14:
+:legacy_src/malmo_orator.py:628:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=629,col=5,endLine=629,endColumn=12:
+:legacy_src/malmo_orator.py:629:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=629,col=5,endLine=629,endColumn=12:
+:legacy_src/malmo_orator.py:629:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=630,col=5,endLine=630,endColumn=11:
+:legacy_src/malmo_orator.py:630:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=630,col=5,endLine=630,endColumn=11:
+:legacy_src/malmo_orator.py:630:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (T201),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_orator.py,line=651,col=32,endLine=651,endColumn=37::
+legacy_src/malmo_orator.py:651:32: T201 `print` found
+::error title=Ruff (T201),file=/Users/adam/Developer/vcs/github.twardoch/pub/e11
+ocutionist/legacy_src/malmo_orator.py,line=654,col=32,endLine=654,endColumn=37::
+legacy_src/malmo_orator.py:654:32: T201 `print` found
+::error title=Ruff (PLR0913),file=/Users/adam/Developer/vcs/github.twardoch/pub/
+e11ocutionist/legacy_src/malmo_orator.py,line=724,col=5,endLine=724,endColumn=9:
+:legacy_src/malmo_orator.py:724:5: PLR0913 Too many arguments in function defini
+tion (11 > 5)
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=729,col=5,endLine=729,endColumn=14:
+:legacy_src/malmo_orator.py:729:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=729,col=5,endLine=729,endColumn=14:
+:legacy_src/malmo_orator.py:729:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=730,col=5,endLine=730,endColumn=10:
+:legacy_src/malmo_orator.py:730:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=730,col=5,endLine=730,endColumn=10:
+:legacy_src/malmo_orator.py:730:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=731,col=5,endLine=731,endColumn=16:
+:legacy_src/malmo_orator.py:731:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=731,col=5,endLine=731,endColumn=16:
+:legacy_src/malmo_orator.py:731:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=732,col=5,endLine=732,endColumn=13:
+:legacy_src/malmo_orator.py:732:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=732,col=5,endLine=732,endColumn=13:
+:legacy_src/malmo_orator.py:732:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=733,col=5,endLine=733,endColumn=14:
+:legacy_src/malmo_orator.py:733:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=733,col=5,endLine=733,endColumn=14:
+:legacy_src/malmo_orator.py:733:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=734,col=5,endLine=734,endColumn=12:
+:legacy_src/malmo_orator.py:734:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=734,col=5,endLine=734,endColumn=12:
+:legacy_src/malmo_orator.py:734:5: FBT002 Boolean default positional argument in
+ function definition
+::error title=Ruff (FBT001),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=735,col=5,endLine=735,endColumn=11:
+:legacy_src/malmo_orator.py:735:5: FBT001 Boolean-typed positional argument in f
+unction definition
+::error title=Ruff (FBT002),file=/Users/adam/Developer/vcs/github.twardoch/pub/e
+11ocutionist/legacy_src/malmo_orator.py,line=735,col=5,endLine=735,endColumn=11:
+:legacy_src/malmo_orator.py:735:5: FBT002 Boolean default positional argument in
+ function definition
+> ruff format
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+1 file left unchanged
+
+
+
+# THIS IS THE TEST RESULTS:
+============================= test session starts ==============================
+platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/adam/Deve
+loper/vcs/github.twardoch/pub/e11ocutionist/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist
+configfile: pyproject.toml
+plugins: anyio-4.9.0, cov-6.1.1
+collected 75 items                                                             
+
+tests/test_chunker.py::test_split_into_paragraphs PASSED                 [  1%]
+tests/test_chunker.py::test_paragraph_classification PASSED              [  2%]
+tests/test_chunker.py::test_count_tokens PASSED                          [  4%]
+tests/test_chunker.py::test_generate_hash PASSED                         [  5%]
+tests/test_chunker.py::test_generate_id PASSED                           [  6%]
+tests/test_chunker.py::test_escape_xml_chars PASSED                      [  8%]
+tests/test_chunker_semantic.py::test_itemize_document PASSED             [  9%]
+tests/test_chunker_semantic.py::test_semantic_analysis PASSED            [ 10%]
+tests/test_chunker_semantic.py::test_extract_and_parse_llm_response_manually PAS
+SED [ 12%]
+tests/test_chunker_semantic.py::test_add_unit_tags PASSED                [ 13%]
+tests/test_chunker_semantic.py::test_create_chunks PASSED                [ 14%]
+tests/test_cli.py::test_process_invalid_input_file PASSED                [ 16%]
+tests/test_cli.py::test_process_invalid_start_step PASSED                [ 17%]
+tests/test_cli.py::test_process_basic PASSED                             [ 18%]
+tests/test_cli.py::test_chunk_command PASSED                             [ 20%]
+tests/test_cli.py::test_entitize_command PASSED                          [ 21%]
+tests/test_cli.py::test_orate_command PASSED                             [ 22%]
+tests/test_cli.py::test_tonedown_command PASSED                          [ 24%]
+tests/test_cli.py::test_convert_11labs_command PASSED                    [ 25%]
+tests/test_cli.py::test_say_command PASSED                               [ 26%]
+tests/test_cli.py::test_say_command_with_file PASSED                     [ 28%]
+tests/test_cli.py::test_neifix_command PASSED                            [ 29%]
+tests/test_cli.py::test_say_command_missing_input PASSED                 [ 30%]
+tests/test_cli.py::test_say_command_missing_api_key FAILED               [ 32%]
+tests/test_cli.py::test_say_command_env_api_key PASSED                   [ 33%]
+tests/test_cli.py::test_debug_logging_configuration PASSED               [ 34%]
+tests/test_cli.py::test_verbose_logging_configuration PASSED             [ 36%]
+tests/test_cli.py::test_process_pipeline_error PASSED                    [ 37%]
+tests/test_cli.py::test_orate_selective_steps PASSED                     [ 38%]
+tests/test_cli.py::test_process_with_invalid_output_dir PASSED           [ 40%]
+tests/test_cli.py::test_chunk_command_with_invalid_model PASSED          [ 41%]
+tests/test_cli.py::test_entitize_command_with_invalid_temperature PASSED [ 42%]
+tests/test_cli.py::test_orate_command_no_steps_selected PASSED           [ 44%]
+tests/test_cli.py::test_tonedown_command_invalid_min_em_distance PASSED  [ 45%]
+tests/test_cli.py::test_convert_11labs_command_with_both_modes PASSED    [ 46%]
+tests/test_cli.py::test_say_command_with_both_inputs PASSED              [ 48%]
+tests/test_cli.py::test_neifix_command_same_input_output PASSED          [ 49%]
+tests/test_cli.py::test_process_with_backup_error PASSED                 [ 50%]
+tests/test_cli.py::test_process_with_custom_config PASSED                [ 52%]
+tests/test_elevenlabs_converter.py::test_extract_text_from_xml PASSED    [ 53%]
+tests/test_elevenlabs_converter.py::test_process_dialog PASSED           [ 54%]
+tests/test_elevenlabs_converter.py::test_process_document PASSED         [ 56%]
+tests/test_elevenlabs_synthesizer.py::test_sanitize_filename PASSED      [ 57%]
+tests/test_elevenlabs_synthesizer.py::test_get_personal_voices PASSED    [ 58%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_voice PASSED  [ 60%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices PASSED [ 6
+1%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices_missing_ap
+i_key PASSED [ 62%]
+tests/test_entitizer.py::test_extract_item_elements PASSED               [ 64%]
+tests/test_entitizer.py::test_extract_nei_from_tags PASSED               [ 65%]
+tests/test_entitizer.py::test_merge_tagged_items PASSED                  [ 66%]
+tests/test_entitizer.py::test_nei_identification_mock PASSED             [ 68%]
+tests/test_integration.py::test_process_to_chunks PASSED                 [ 69%]
+tests/test_integration.py::test_process_chunks PASSED                    [ 70%]
+tests/test_integration.py::test_process_to_text PASSED                   [ 72%]
+tests/test_integration.py::test_process_to_speech PASSED                 [ 73%]
+tests/test_integration.py::test_full_pipeline_integration PASSED         [ 74%]
+tests/test_neifix.py::test_transform_nei_content PASSED                  [ 76%]
+tests/test_neifix.py::test_transform_nei_content_return_content PASSED   [ 77%]
+tests/test_orator.py::test_extract_chunk_items PASSED                    [ 78%]
+tests/test_orator.py::test_merge_processed_items PASSED                  [ 80%]
+tests/test_orator.py::test_enhance_punctuation PASSED                    [ 81%]
+tests/test_package.py::test_version PASSED                               [ 82%]
+tests/test_package.py::test_package_structure PASSED                     [ 84%]
+tests/test_pipeline.py::test_pipeline_config_defaults PASSED             [ 85%]
+tests/test_pipeline.py::test_pipeline_config_custom PASSED               [ 86%]
+tests/test_pipeline.py::test_pipeline_output_directory_creation PASSED   [ 88%]
+tests/test_pipeline.py::test_pipeline_progress_tracking PASSED           [ 89%]
+tests/test_pipeline.py::test_pipeline_backup_functionality PASSED        [ 90%]
+tests/test_pipeline.py::test_pipeline_step_ordering PASSED               [ 92%]
+tests/test_pipeline.py::test_pipeline_step_dependencies PASSED           [ 93%]
+tests/test_pipeline.py::test_pipeline_resume_from_step PASSED            [ 94%]
+tests/test_pipeline.py::test_pipeline_force_restart PASSED               [ 96%]
+tests/test_tonedown.py::test_extract_neis_from_document PASSED           [ 97%]
+tests/test_tonedown.py::test_update_nei_tags PASSED                      [ 98%]
+tests/test_tonedown.py::test_reduce_emphasis PASSED                      [100%]
+
+=================================== FAILURES ===================================
+_______________________ test_say_command_missing_api_key _______________________
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-44/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+        with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+>           say(text="Hello", output_dir=sample_output_dir, api_key=None)
+
+tests/test_cli.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/e11ocutionist/cli.py:310: in say
+    result = synthesizer.synthesize_with_all_voices(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'Hello'
+output_dir = PosixPath('/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T
+/pytest-of-adam/pytest-44/test_say_command_missing_api_k0/output')
+api_key = 'sk_f83fde138e9645ce54c25d96c0db7cd2d5ca4d91410a64ed'
+model_id = 'eleven_multilingual_v2', output_format = 'mp3_44100_128'
+verbose = False
+
+    def synthesize_with_all_voices(
+        text: str,
+        output_dir: str | Path,
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+    ) -> str:
+        """Synthesize text with all available voices."""
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        set_api_key(api_key)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+        voices = get_personal_voices(api_key)
+        if not voices:
+            msg = "No personal voices found"
+>           raise ValueError(msg)
+E           ValueError: No personal voices found
+
+src/e11ocutionist/elevenlabs_synthesizer.py:193: ValueError
+
+During handling of the above exception, another exception occurred:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-44/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+>       with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'ElevenLabs API key not provided'
+E        Input: 'No personal voices found'
+
+tests/test_cli.py:314: AssertionError
+============================= slowest 10 durations =============================
+0.77s call     tests/test_chunker.py::test_count_tokens
+0.02s teardown tests/test_cli.py::test_say_command_missing_api_key
+0.02s call     tests/test_cli.py::test_process_with_backup_error
+0.02s call     tests/test_cli.py::test_say_command_env_api_key
+0.01s call     tests/test_cli.py::test_orate_command
+0.01s call     tests/test_cli.py::test_process_invalid_input_file
+0.01s call     tests/test_cli.py::test_neifix_command
+0.01s call     tests/test_cli.py::test_say_command_missing_api_key
+0.01s call     tests/test_cli.py::test_process_with_invalid_output_dir
+0.01s call     tests/test_cli.py::test_process_with_custom_config
+=========================== short test summary info ============================
+FAILED tests/test_cli.py::test_say_command_missing_api_key - AssertionError: Reg
+ex pattern did not match.
+========================= 1 failed, 74 passed in 5.26s =========================
+============================= test session starts ==============================
+platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/adam/Deve
+loper/vcs/github.twardoch/pub/e11ocutionist/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist
+configfile: pyproject.toml
+plugins: anyio-4.9.0, cov-6.1.1
+collected 75 items                                                             
+
+tests/test_chunker.py::test_split_into_paragraphs PASSED                 [  1%]
+tests/test_chunker.py::test_paragraph_classification PASSED              [  2%]
+tests/test_chunker.py::test_count_tokens PASSED                          [  4%]
+tests/test_chunker.py::test_generate_hash PASSED                         [  5%]
+tests/test_chunker.py::test_generate_id PASSED                           [  6%]
+tests/test_chunker.py::test_escape_xml_chars PASSED                      [  8%]
+tests/test_chunker_semantic.py::test_itemize_document PASSED             [  9%]
+tests/test_chunker_semantic.py::test_semantic_analysis PASSED            [ 10%]
+tests/test_chunker_semantic.py::test_extract_and_parse_llm_response_manually PAS
+SED [ 12%]
+tests/test_chunker_semantic.py::test_add_unit_tags PASSED                [ 13%]
+tests/test_chunker_semantic.py::test_create_chunks PASSED                [ 14%]
+tests/test_cli.py::test_process_invalid_input_file PASSED                [ 16%]
+tests/test_cli.py::test_process_invalid_start_step PASSED                [ 17%]
+tests/test_cli.py::test_process_basic PASSED                             [ 18%]
+tests/test_cli.py::test_chunk_command PASSED                             [ 20%]
+tests/test_cli.py::test_entitize_command PASSED                          [ 21%]
+tests/test_cli.py::test_orate_command PASSED                             [ 22%]
+tests/test_cli.py::test_tonedown_command PASSED                          [ 24%]
+tests/test_cli.py::test_convert_11labs_command PASSED                    [ 25%]
+tests/test_cli.py::test_say_command PASSED                               [ 26%]
+tests/test_cli.py::test_say_command_with_file PASSED                     [ 28%]
+tests/test_cli.py::test_neifix_command PASSED                            [ 29%]
+tests/test_cli.py::test_say_command_missing_input PASSED                 [ 30%]
+tests/test_cli.py::test_say_command_missing_api_key FAILED               [ 32%]
+tests/test_cli.py::test_say_command_env_api_key PASSED                   [ 33%]
+tests/test_cli.py::test_debug_logging_configuration PASSED               [ 34%]
+tests/test_cli.py::test_verbose_logging_configuration PASSED             [ 36%]
+tests/test_cli.py::test_process_pipeline_error PASSED                    [ 37%]
+tests/test_cli.py::test_orate_selective_steps PASSED                     [ 38%]
+tests/test_cli.py::test_process_with_invalid_output_dir PASSED           [ 40%]
+tests/test_cli.py::test_chunk_command_with_invalid_model PASSED          [ 41%]
+tests/test_cli.py::test_entitize_command_with_invalid_temperature PASSED [ 42%]
+tests/test_cli.py::test_orate_command_no_steps_selected PASSED           [ 44%]
+tests/test_cli.py::test_tonedown_command_invalid_min_em_distance PASSED  [ 45%]
+tests/test_cli.py::test_convert_11labs_command_with_both_modes PASSED    [ 46%]
+tests/test_cli.py::test_say_command_with_both_inputs PASSED              [ 48%]
+tests/test_cli.py::test_neifix_command_same_input_output PASSED          [ 49%]
+tests/test_cli.py::test_process_with_backup_error PASSED                 [ 50%]
+tests/test_cli.py::test_process_with_custom_config PASSED                [ 52%]
+tests/test_elevenlabs_converter.py::test_extract_text_from_xml PASSED    [ 53%]
+tests/test_elevenlabs_converter.py::test_process_dialog PASSED           [ 54%]
+tests/test_elevenlabs_converter.py::test_process_document PASSED         [ 56%]
+tests/test_elevenlabs_synthesizer.py::test_sanitize_filename PASSED      [ 57%]
+tests/test_elevenlabs_synthesizer.py::test_get_personal_voices PASSED    [ 58%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_voice PASSED  [ 60%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices PASSED [ 6
+1%]
+tests/test_elevenlabs_synthesizer.py::test_synthesize_with_all_voices_missing_ap
+i_key PASSED [ 62%]
+tests/test_entitizer.py::test_extract_item_elements PASSED               [ 64%]
+tests/test_entitizer.py::test_extract_nei_from_tags PASSED               [ 65%]
+tests/test_entitizer.py::test_merge_tagged_items PASSED                  [ 66%]
+tests/test_entitizer.py::test_nei_identification_mock PASSED             [ 68%]
+tests/test_integration.py::test_process_to_chunks PASSED                 [ 69%]
+tests/test_integration.py::test_process_chunks PASSED                    [ 70%]
+tests/test_integration.py::test_process_to_text PASSED                   [ 72%]
+tests/test_integration.py::test_process_to_speech PASSED                 [ 73%]
+tests/test_integration.py::test_full_pipeline_integration PASSED         [ 74%]
+tests/test_neifix.py::test_transform_nei_content PASSED                  [ 76%]
+tests/test_neifix.py::test_transform_nei_content_return_content PASSED   [ 77%]
+tests/test_orator.py::test_extract_chunk_items PASSED                    [ 78%]
+tests/test_orator.py::test_merge_processed_items PASSED                  [ 80%]
+tests/test_orator.py::test_enhance_punctuation PASSED                    [ 81%]
+tests/test_package.py::test_version PASSED                               [ 82%]
+tests/test_package.py::test_package_structure PASSED                     [ 84%]
+tests/test_pipeline.py::test_pipeline_config_defaults PASSED             [ 85%]
+tests/test_pipeline.py::test_pipeline_config_custom PASSED               [ 86%]
+tests/test_pipeline.py::test_pipeline_output_directory_creation PASSED   [ 88%]
+tests/test_pipeline.py::test_pipeline_progress_tracking PASSED           [ 89%]
+tests/test_pipeline.py::test_pipeline_backup_functionality PASSED        [ 90%]
+tests/test_pipeline.py::test_pipeline_step_ordering PASSED               [ 92%]
+tests/test_pipeline.py::test_pipeline_step_dependencies PASSED           [ 93%]
+tests/test_pipeline.py::test_pipeline_resume_from_step PASSED            [ 94%]
+tests/test_pipeline.py::test_pipeline_force_restart PASSED               [ 96%]
+tests/test_tonedown.py::test_extract_neis_from_document PASSED           [ 97%]
+tests/test_tonedown.py::test_update_nei_tags PASSED                      [ 98%]
+tests/test_tonedown.py::test_reduce_emphasis PASSED                      [100%]/
+Users/adam/Developer/vcs/github.twardoch/pub/e11ocutionist/.venv/lib/python3.12/
+site-packages/coverage/inorout.py:509: CoverageWarning: Module tests was never i
+mported. (module-not-imported)
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+
+
+=================================== FAILURES ===================================
+_______________________ test_say_command_missing_api_key _______________________
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-45/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+        with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+>           say(text="Hello", output_dir=sample_output_dir, api_key=None)
+
+tests/test_cli.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/e11ocutionist/cli.py:310: in say
+    result = synthesizer.synthesize_with_all_voices(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'Hello'
+output_dir = PosixPath('/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T
+/pytest-of-adam/pytest-45/test_say_command_missing_api_k0/output')
+api_key = 'sk_f83fde138e9645ce54c25d96c0db7cd2d5ca4d91410a64ed'
+model_id = 'eleven_multilingual_v2', output_format = 'mp3_44100_128'
+verbose = False
+
+    def synthesize_with_all_voices(
+        text: str,
+        output_dir: str | Path,
+        api_key: str | None = None,
+        model_id: str = "eleven_multilingual_v2",
+        output_format: str = "mp3_44100_128",
+        verbose: bool = False,
+    ) -> str:
+        """Synthesize text with all available voices."""
+        if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
+    
+        set_api_key(api_key)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+        voices = get_personal_voices(api_key)
+        if not voices:
+            msg = "No personal voices found"
+>           raise ValueError(msg)
+E           ValueError: No personal voices found
+
+src/e11ocutionist/elevenlabs_synthesizer.py:193: ValueError
+
+During handling of the above exception, another exception occurred:
+
+sample_output_dir = '/private/var/folders/05/clcynl0509ldxltl599hhhx40000gn/T/py
+test-of-adam/pytest-45/test_say_command_missing_api_k0/output'
+
+    def test_say_command_missing_api_key(sample_output_dir):
+        """Test say command with no API key provided."""
+>       with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'ElevenLabs API key not provided'
+E        Input: 'No personal voices found'
+
+tests/test_cli.py:314: AssertionError
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.12.8-final-0 _______________
+
+Name                                          Stmts   Miss Branch BrPart  Cover 
+  Missing
+--------------------------------------------------------------------------------
+---------
+src/e11ocutionist/__init__.py                    13      2      0      0    85% 
+  32-34
+src/e11ocutionist/__main__.py                     1      1      0      0     0% 
+  5
+src/e11ocutionist/__version__.py                  9      0      0      0   100%
+src/e11ocutionist/chunker.py                    484    210    158     15    53% 
+  203, 223, 300, 302, 360-369, 373-378, 400-403, 424-479, 495-566, 584-618, 623,
+ 634-636, 650-673, 742-744, 759-761, 771->775, 850-851, 888-895, 900-910, 929-93
+5, 947-950, 984-985, 1026->1039, 1046-1049, 1067-1138
+src/e11ocutionist/cli.py                        179     27     42      8    84% 
+  76, 106-108, 140-142, 172->174, 174->176, 177, 179, 198-200, 234-236, 268-270,
+ 298-299, 321-323, 350-352, 434
+src/e11ocutionist/e11ocutionist.py              229     53     52     14    73% 
+  89-90, 96-97, 111-112, 130-131, 135, 142, 163-165, 216->223, 217->216, 224, 28
+3-286, 307-309, 324-325, 338-346, 365-368, 383-384, 416-419, 434-435, 459-462, 4
+67-498
+src/e11ocutionist/elevenlabs_converter.py        69     16     30      7    69% 
+  85-86, 90-107, 155-156, 167->181, 173-174, 177->181, 184
+src/e11ocutionist/elevenlabs_synthesizer.py      77     10     12      3    85% 
+  21, 30-32, 42-43, 136-137, 154-155, 207->196
+src/e11ocutionist/entitizer.py                  207    142     82      6    29% 
+  42, 56-57, 80-107, 132->125, 159->157, 176->179, 183-186, 207-275, 288-311, 33
+4, 358-367, 397-454, 483-582
+src/e11ocutionist/neifix.py                      32      1      8      1    95% 
+  67
+src/e11ocutionist/orator.py                     214     54     88     22    72% 
+  46-47, 65-66, 89, 128-132, 155, 193-197, 260, 273-302, 324, 328-332, 337->336,
+ 340->336, 351->349, 355->367, 362->361, 390-391, 420, 426-428, 494->509, 503-50
+6, 509->524, 518-521, 524->539, 533-536, 539->556, 550-553
+src/e11ocutionist/tonedown.py                   211    115     96     19    43% 
+  46-47, 58, 81, 85, 89-90, 109-197, 215-328, 343, 351-352, 358->356, 367, 371->
+363, 375->363, 380->383, 391-393, 413-414, 421-422, 431->430, 456, 462->472, 468
+-469, 472->482, 478-479, 490-492
+src/e11ocutionist/utils.py                       83     45     10      1    42% 
+  52-58, 90-101, 115-138, 157, 164-166, 189-192, 197-204
+tests/test_chunker.py                            65      0      0      0   100%
+tests/test_chunker_semantic.py                   51      1      0      0    98% 
+  19
+tests/test_cli.py                               175      0      0      0   100%
+tests/test_elevenlabs_converter.py               70      0      8      1    99% 
+  165->164
+tests/test_elevenlabs_synthesizer.py             69      0      0      0   100%
+tests/test_entitizer.py                          52      0      0      0   100%
+tests/test_integration.py                       108      8      4      2    91% 
+  149-152, 156-157, 179-181, 185-186
+tests/test_neifix.py                             42      0      6      2    96% 
+  69->68, 100->exit
+tests/test_orator.py                             35      0      0      0   100%
+tests/test_package.py                            18      2      4      1    86% 
+  37->36, 42-43
+tests/test_pipeline.py                          127      0      0      0   100%
+tests/test_tonedown.py                           25      0      0      0   100%
+--------------------------------------------------------------------------------
+---------
+TOTAL                                          2645    687    600    102    69%
+============================= slowest 10 durations =============================
+1.30s call     tests/test_chunker.py::test_count_tokens
+0.05s call     tests/test_cli.py::test_say_command_missing_input
+0.05s call     tests/test_cli.py::test_neifix_command
+0.04s call     tests/test_cli.py::test_say_command_env_api_key
+0.04s call     tests/test_cli.py::test_entitize_command_with_invalid_temperature
+0.04s call     tests/test_cli.py::test_say_command_with_both_inputs
+0.04s call     tests/test_cli.py::test_say_command_missing_api_key
+0.04s call     tests/test_cli.py::test_convert_11labs_command_with_both_modes
+0.04s call     tests/test_cli.py::test_orate_command_no_steps_selected
+0.04s call     tests/test_cli.py::test_say_command_with_file
+=========================== short test summary info ============================
+FAILED tests/test_cli.py::test_say_command_missing_api_key - AssertionError: Reg
+ex pattern did not match.
+======================== 1 failed, 74 passed in 12.45s =========================
+
+
+
+# THIS IS OUR CURRENT TODO:
+# TODO List for e11ocutionist
+
+The old code that we are porting (for your reference) is in the `legacy_src/` fo
+lder.
+
+The new code is in the `src/` folder.
+
+## 1. Critical: Fix Test Failures [PRIORITY: CRITICAL]
+
+- [ ] **Fix `ImportError` in `tests/test_cli.py`**
+    - **Reasoning:** Tests are failing to collect due to `ImportError: cannot im
+port name 'process' from 'e11ocutionist.cli'`. This blocks all other test execut
+ion and reporting.
+    - **Plan:**
+        - Investigate `src/e11ocutionist/cli.py` to understand why the `process`
+ function (or object) is not found or not exported correctly.
+        - Check for typos in `tests/test_cli.py` or `src/e11ocutionist/cli.py`.
+        - Ensure `src/e11ocutionist/cli.py` defines and correctly exports the `p
+rocess` symbol.
+        - Modify `__init__.py` files if necessary to ensure proper module export
+s.
+        - Run `pytest tests/test_cli.py` locally to confirm the fix.
+
+## 2. Testing and Documentation [PRIORITY: HIGH]
+
+### 2.1. Implement Unit Tests
+
+- [ ] **Improve test coverage (currently at 11% overall)**
+    - **Reasoning:** Low test coverage makes the codebase fragile and hard to re
+factor safely.
+    - **Plan:** Incrementally increase coverage for all modules, focusing on cri
+tical paths first.
+
+  - [ ] **Implement unit tests for `cli.py` (currently at 9%)**
+    - **Plan:**
+        - After fixing the import error, identify main CLI commands and their fu
+nctionalities.
+        - Write tests for command parsing (using `click.testing.CliRunner`).
+        - Test different command arguments and options (valid and invalid).
+        - Mock underlying service calls (e.g., `E11ocutionistPipeline`) to isola
+te CLI logic.
+        - Verify correct output and exit codes.
+
+  - [ ] **Implement unit tests for `e11ocutionist.py` (pipeline orchestration, c
+urrently at 18%)**
+    - **Plan:**
+        - Test `PipelineConfig` creation with default and custom values.
+        - Test pipeline step execution order.
+        - Test handling of `start_step` and `force_restart`.
+        - Test progress tracking and backup functionality.
+        - Mock individual processing steps (`chunker`, `entitizer`, etc.) to tes
+t the pipeline's control flow.
+        - Test error handling if a step fails.
+
+  - [ ] **Implement unit tests for `entitizer.py` (currently at 9%)**
+    - **Plan:**
+        - Test NEI identification and tagging logic with various input texts.
+        - Test dictionary building, updates, and merging processes.
+        - Test XML input parsing and output generation.
+        - Cover edge cases like empty inputs or malformed XML.
+        - Mock LLM calls for entity recognition if applicable.
+
+  - [ ] **Implement unit tests for `utils.py` (currently at 20%)**
+    - **Plan:**
+        - For each utility function:
+            - Identify its purpose and expected inputs/outputs.
+            - Write tests for typical use cases.
+            - Write tests for edge cases (e.g., empty inputs, invalid types).
+            - Ensure pure functions are tested for a variety of inputs.
+
+  - [ ] **Implement unit tests for `chunker.py` (currently at 7%)**
+    - **Plan:**
+        - Test paragraph splitting and classification logic.
+        - Test text processing utilities (token counting, hash generation).
+        - Test ID generation and character escaping.
+        - Test semantic analysis (mocking LLM calls).
+        - Test chunk creation with various inputs (short text, long text, text w
+ith/without metadata).
+
+  - [ ] **Implement unit tests for `orator.py` (currently at 6%)**
+    - **Plan:**
+        - Test item extraction from XML.
+        - Test merging processed items back into XML.
+        - Test punctuation, sentence, word, and emotion enhancement logic (mocki
+ng LLM calls).
+        - Test the full `orator` processing pipeline with various inputs.
+
+  - [ ] **Implement unit tests for `tonedown.py` (currently at 5%)**
+    - **Plan:**
+        - Test NEI extraction from documents.
+        - Test language detection logic.
+        - Test pronunciation cue review process (mocking LLM calls).
+        - Test emphasis reduction logic.
+        - Test NEI tag updates in the XML.
+  
+  - [ ] **Implement unit tests for `elevenlabs_converter.py` (currently at 9%)**
+    - **Plan:**
+      - Test text extraction from various XML structures.
+      - Test dialog processing rules and transformations.
+      - Test handling of different quote styles and character assignments.
+      - Test generation of ElevenLabs-specific markup.
+      - Cover complex dialog scenarios (nested quotes, multiple speakers).
+
+  - [ ] **Implement unit tests for `elevenlabs_synthesizer.py` (currently at 29%
+)**
+    - **Plan:**
+      - Test filename sanitization with various inputs.
+      - Test voice filtering and selection logic.
+      - Mock ElevenLabs API calls to test text-to-speech synthesis logic.
+      - Test handling of API errors and retries.
+      - Test batch processing and file output.
+
+  - [ ] **Implement unit tests for `neifix.py` (currently at 10%)**
+    - **Plan:**
+      - Test NEI content transformation rules.
+      - Test input file reading and output file writing.
+      - Test handling of edge cases (empty files, missing files, invalid XML).
+      - Verify the integrity of the output XML structure.
+
+- [ ] **Create test fixtures**
+    - **Reasoning:** Reusable test data and mocks simplify test writing and main
+tenance.
+    - **Plan:**
+        - Create a `fixtures/` directory within `tests/`.
+        - Add sample input XML files representing different scenarios (e.g., sim
+ple text, dialogs, various entities).
+        - Develop mock LLM response generators or static mock response files.
+        - Define standard configurations for test environment variables (e.g., A
+PI keys for mock servers if used).
+
+- [ ] **Improve `orator.py` tests: Test error handling and recovery**
+    - **Reasoning:** Robust error handling is crucial for pipeline stability.
+    - **Plan:**
+        - Identify potential failure points in `orator.py` (e.g., LLM errors, ma
+lformed XML).
+        - Write tests that simulate these failures.
+        - Verify that `orator.py` handles these errors gracefully (e.g., logs er
+rors, retries, or skips problematic items).
+
+- [ ] **Improve `elevenlabs_converter.py` tests: Test with more complex dialog s
+cenarios**
+    - **Reasoning:** Dialog processing is a key feature and needs thorough testi
+ng.
+    - **Plan:**
+        - Create input XML files with complex dialogs (e.g., nested quotes, rapi
+d speaker changes, attributed vs. non-attributed speech).
+        - Write tests to verify correct conversion of these scenarios.
+
+- [ ] **Improve integration tests: Test error handling between modules**
+    - **Reasoning:** Ensure that errors in one stage of the pipeline are handled
+ correctly by subsequent stages or the main pipeline orchestrator.
+    - **Plan:**
+        - Design integration test scenarios where one module (e.g., `chunker`) i
+s forced to produce an error or invalid output.
+        - Verify that the pipeline (`e11ocutionist.py`) catches this error or th
+at the next module in sequence handles the problematic input gracefully.
+
+### 2.2. Improve Documentation
+
+- [ ] **Update README.md**
+    - **Reasoning:** The README is the entry point for new users and contributor
+s.
+    - **Plan:**
+        - Review current README for accuracy and completeness.
+        - Add a section on detailed configuration options for the pipeline and i
+ndividual modules.
+        - Create a troubleshooting section covering common errors (like the CLI 
+import error) and their solutions.
+        - Add a "Project Status" section including current test coverage and kno
+wn major issues.
+
+- [ ] **Add docstrings to all public functions and classes in `src/`**
+    - **Reasoning:** Good docstrings improve code understanding and maintainabil
+ity.
+    - **Plan:**
+        - Iterate through all `.py` files in `src/e11ocutionist/`.
+        - For each public function, class, and method:
+            - Ensure a clear, imperative docstring exists.
+            - Describe the purpose, arguments (with types), and return values.
+            - Add simple usage examples where helpful (e.g., for `utils.py` func
+tions).
+            - Follow PEP 257 conventions.
+
+- [ ] **Document CLI commands comprehensively**
+    - **Reasoning:** Users need clear guidance on how to use the CLI.
+    - **Plan:**
+        - Review `src/e11ocutionist/cli.py`.
+        - Ensure all `fire` commands and their options have comprehensive help t
+ext.
+        - Add examples for each command and common combinations of options.
+        - Generate a `CLI_USAGE.md` file or section in README with this informat
+ion.
+
+### 2.3. Final Integration Tasks
+
+- [ ] **Add comprehensive error handling in `src/`**
+    - **Reasoning:** The application should be resilient to unexpected issues.
+    - **Plan:**
+        - Define custom exception classes (e.g., `ChunkerError`, `EntitizerError
+`, `LLMError`) in `e11ocutionist.exceptions`.
+        - Review `src/` modules and replace generic `Exception` handling with sp
+ecific custom exceptions.
+        - Implement `try-except` blocks around external calls (LLMs, file I/O).
+        - Add meaningful error messages that guide the user.
+        - Consider recovery strategies for common failures (e.g., retries for LL
+M calls).
+
+- [ ] **Add logging enhancements in `src/`**
+    - **Reasoning:** Effective logging is essential for debugging and monitoring
+.
+    - **Plan:**
+        - Standardize on `loguru` for logging throughout `src/`.
+        - Improve log messages for clarity, including context-specific informati
+on.
+        - Implement structured logging where appropriate.
+        - Add configurable log levels (DEBUG, INFO, WARNING, ERROR) via CLI opti
+ons or config file.
+        - Add progress indicators for long-running operations (e.g., processing 
+a large document).
+
+- [ ] **Create example workflows**
+    - **Reasoning:** Examples help users understand how to use the system for co
+mmon tasks.
+    - **Plan:**
+        - Identify 2-3 common use cases for `e11ocutionist`.
+        - Create example scripts (e.g., shell scripts or Python scripts) that de
+monstrate these workflows.
+        - Document these workflows in the README or a separate `EXAMPLES.md` fil
+e.
+        - Include sample input files and describe the expected outputs.
+
+## 3. Code Quality and Maintenance [PRIORITY: HIGH]
+
+### 3.1. Fix Linting Issues in `src/` (New Code)
+
+- [ ] **Update `pyproject.toml` ruff configuration**
+    - **Reasoning:** Ensure linting rules are appropriate for the project.
+    - **Plan:**
+        - Review existing `pyproject.toml` for `ruff` settings.
+        - Add specific rules to `lint.select` or `lint.ignore` to address common
+ issues or noisy warnings not relevant to `src/` code.
+        - Ensure `per-file-ignores` is used sparingly, primarily for specific le
+gacy or generated code if any.
+
+- [ ] **Address FBT001/FBT002 warnings (boolean arguments) in `src/`**
+    - **Reasoning:** Boolean positional arguments can be confusing.
+    - **Plan:**
+        - Identify any new functions in `src/` that use boolean positional argum
+ents.
+        - Refactor them to use keyword-only arguments for boolean flags (`def fu
+nc(*, flag: bool = False)`).
+        - Update function calls accordingly.
+
+- [ ] **Fix PLR0913 warnings (too many arguments) in `src/`**
+    - **Reasoning:** Functions with too many arguments are hard to use and test.
+    - **Plan:**
+        - Identify any new functions in `src/` with more than 5-6 arguments.
+        - Refactor by grouping related parameters into dataclasses or small obje
+cts.
+        - Update function definitions and call sites.
+
+- [ ] **Fix datetime issues (DTZ005 - naive datetimes) in `src/`**
+    - **Reasoning:** Naive datetimes can lead to timezone-related bugs.
+    - **Plan:**
+        - Search for `datetime.now()` or `datetime.utcnow()` in `src/`.
+        - Replace with timezone-aware datetimes, e.g., `datetime.now(timezone.ut
+c)`.
+        - Ensure all datetime objects are handled with explicit timezone informa
+tion.
+
+- [ ] **Refactor complex functions (C901, PLR0912, PLR0915) in `src/`**
+    - **Reasoning:** Complex functions are difficult to understand, test, and ma
+intain.
+    - **Plan:**
+        - Run `ruff` to identify functions in `src/` flagged for complexity, too
+ many branches, or too many statements.
+        - For each identified function:
+            - Analyze its logic and responsibilities.
+            - Break it down into smaller, more focused helper functions.
+            - Aim for functions that do one thing well.
+
+- [ ] **Address security issues (S320, S603, S324, B904 etc.) in `src/`**
+    - **Reasoning:** Ensure new code is secure.
+    - **Plan:**
+        - **S320 (lxml):** If parsing external XML in `src/`, ensure `defusedxml
+.lxml` is used or parsing is done with appropriate security measures.
+        - **S603 (subprocess):** If using `subprocess` in `src/`, ensure command
+s are not constructed from untrusted input, or use `shlex.quote`.
+        - **S324 (insecure hash):** Avoid insecure hash functions like MD5/SHA1 
+in `src/` if cryptographic security is needed; prefer SHA256+.
+        - **B904 (raise from):** In `src/`, when re-raising exceptions, use `rai
+se NewException from original_exception` to preserve context.
+        - Regularly review `ruff` security warnings for new code in `src/`.
+
+### 3.2. Code Structure Improvements for `src/`
+
+- [ ] **Implement consistent error handling (using custom exceptions)**
+    - **Previously mentioned in 2.3, also a code quality item.**
+    - **Plan:**
+        - Finalize the design of custom exception classes in `e11ocutionist.exce
+ptions`.
+        - Systematically refactor `src/` modules to use these custom exceptions.
+        - Ensure a clear hierarchy (e.g., `E11ocutionistError` as a base).
+
+- [ ] **Enhance module structure and interfaces**
+    - **Reasoning:** A well-defined structure improves clarity and reusability.
+    - **Plan:**
+        - Review the responsibilities of each module in `src/e11ocutionist/`.
+        - Identify opportunities to organize related functions into logical clas
+ses.
+        - Define clear public interfaces for each module, minimizing direct acce
+ss to internal implementation details.
+        - Look for code duplication and refactor into shared utility functions o
+r classes.
+
+- [ ] **Implement robust configuration management**
+    - **Reasoning:** Centralized and validated configuration is easier to manage
+.
+    - **Plan:**
+        - Design a central configuration object/dataclass (e.g., `PipelineConfig
+` extension or a new one) to hold all pipeline and module settings.
+        - Implement loading of configuration from a file (e.g., TOML or YAML) an
+d/or environment variables, in addition to CLI arguments.
+        - Add validation for configuration parameters (e.g., using Pydantic).
+        - Provide sensible defaults and clear documentation for all configuratio
+n options.
+
+### 3.3. Testing and CI/CD
+
+- [ ] **Set up GitHub Actions workflow**
+    - **Reasoning:** Automated testing and linting improve code quality and catc
+h regressions early.
+    - **Plan:**
+        - Create a workflow file (e.g., `.github/workflows/ci.yml`).
+        - **Linting & Formatting:** Add a job to run `ruff check` and `ruff form
+at --check`.
+        - **Testing:** Add a job to run `pytest` with coverage reporting.
+        - **Coverage Upload:** Configure the workflow to upload coverage reports
+ to a service like Codecov or Coveralls.
+        - **Publishing (Optional, later):** Add a job to build and publish the p
+ackage to PyPI on tagged releases.
+        - Trigger the workflow on pushes to `main` and on pull requests.
+
+## 4. Feature Enhancements [PRIORITY: LOW]
+
+### 4.1. User Experience Improvements
+
+- [ ] **Add detailed progress reporting for CLI**
+    - **Reasoning:** Users need feedback on long-running operations.
+    - **Plan:**
+        - Integrate a library like `rich.progress` or `tqdm` into the CLI.
+        - Display progress bars for document processing stages.
+        - Show estimated time remaining if feasible.
+        - Provide a summary of processing statistics upon completion.
+
+- [ ] **Create more user-friendly error messages**
+    - **Reasoning:** Clear error messages help users diagnose and fix problems.
+    - **Plan:**
+        - Review existing error messages in `src/`.
+        - Enhance them to include more context and actionable advice.
+        - For common configuration errors, suggest specific solutions or point t
+o relevant documentation.
+
+
+
+
+
+I think it’s time to make some more tests, and iteratively run ./UPDATE.sh until
+ the tests pass.
+<task>
+(1) Focus on implementing TODO items that are high priority, especially test fai
+lures and new tests.
+(2) Update the progress in the 'TODO.md' file: mark items as done.
+(3) Run ./UPDATE.sh again until and continue improving, until the tests pass.
+</task>
+
+
+
+```
+
+---
+
+I see we still have one failing test: `test_say_command_missing_api_key`. The issue is that we're getting a different error message than expected. Let me check the test and the implementation:
+
+---
+
+Read file: tests/test_cli.py
+
+---
+
+Let me check the implementation in `cli.py`:
+
+---
+
+Read file: src/e11ocutionist/cli.py
+
+---
+
+Let me check the implementation in `elevenlabs_synthesizer.py`:
+
+---
+
+Read file: src/e11ocutionist/elevenlabs_synthesizer.py
+
+---
+
+I'll help analyze and improve the e11ocutionist project. Let me first understand the current state of the codebase by examining some key files.
+
+First, let me check the project's TODO.md to understand the planned improvements:
+
+---
+
+Read file: TODO.md
+
+---
+
+Let me also check the main pipeline orchestration file:
+
+---
+
+Read file: src/e11ocutionist/e11ocutionist.py
+
+---
+
+
+
+
+
+---
+
+_**User**_
+
+continue
+
+---
+
+_**Assistant**_
+
 
 
 ---
