@@ -17,14 +17,18 @@ The new code is in the `src/` folder.
 
 ### 2.1. Implement Unit Tests
 
-- [ ] Improve test coverage (currently at 38%, up from 15%)
-  - [x] Implement unit tests for `tonedown.py` (coverage increased from 5% to 38%)
-  - [x] Implement unit tests for `orator.py` (coverage increased from 6% to 24%)
-  - [x] Implement unit tests for `chunker.py` (coverage increased from 7% to 16%)
-  - [x] Implement unit tests for `elevenlabs_converter.py` (coverage increased to 48%)
-  - [x] Implement unit tests for `elevenlabs_synthesizer.py` (coverage increased from 31% to 89%)
-  - [x] Implement unit tests for `neifix.py` (coverage increased from 10% to 95%)
-  - [ ] Implement unit tests for remaining modules
+- [ ] Improve test coverage (currently at 55%, up from 38%)
+  - [x] Implement unit tests for `tonedown.py` (coverage increased to 38%)
+  - [x] Implement unit tests for `orator.py` (coverage increased to 70%)
+  - [x] Implement unit tests for `chunker.py` (coverage increased to 52%)
+  - [x] Implement unit tests for `elevenlabs_converter.py` (coverage increased to 69%)
+  - [x] Implement unit tests for `elevenlabs_synthesizer.py` (coverage increased to 88%)
+  - [x] Implement unit tests for `neifix.py` (coverage increased to 95%)
+  - [ ] Implement unit tests for remaining modules:
+    - [ ] `cli.py` (currently at 9%)
+    - [ ] `e11ocutionist.py` (currently at 18%)
+    - [ ] `entitizer.py` (currently at 29%)
+    - [ ] `utils.py` (currently at 42%)
 
 - [ ] Create test fixtures
   - [ ] Add sample XML files for testing
@@ -40,14 +44,14 @@ The new code is in the `src/` folder.
   - [x] Test paragraph splitting and classification
   - [x] Test text processing utilities (token counting, hash generation)
   - [x] Test ID generation and character escaping
-  - [ ] Test semantic analysis
-  - [ ] Test chunk creation with various inputs
+  - [x] Test semantic analysis
+  - [x] Test chunk creation with various inputs
 
 - [x] Add tests for `orator.py`
   - [x] Test item extraction from XML
   - [x] Test merging processed items back into XML
   - [x] Test punctuation enhancement
-  - [ ] Test full pipeline with various inputs
+  - [x] Test full pipeline with various inputs
   - [ ] Test error handling and recovery
 
 - [x] Add tests for `tonedown.py`
@@ -75,9 +79,9 @@ The new code is in the `src/` folder.
   - [x] Test input/output file handling
   - [x] Test edge cases (empty files, missing output)
 
-- [ ] Add tests for integration between modules
-  - [ ] Test passing results between pipeline stages
-  - [ ] Test full pipeline execution
+- [x] Add tests for integration between modules
+  - [x] Test passing results between pipeline stages
+  - [x] Test full pipeline execution
   - [ ] Test error handling between modules
 
 ### 2.2. Improve Documentation
@@ -117,7 +121,7 @@ The new code is in the `src/` folder.
   - [ ] Document typical processing workflows
   - [ ] Include sample inputs and expected outputs
 
-## 3. Code Quality and Maintenance [PRIORITY: MEDIUM]
+## 3. Code Quality and Maintenance [PRIORITY: HIGH]
 
 ### 3.1. Fix Linting Issues
 
@@ -127,37 +131,53 @@ The new code is in the `src/` folder.
   - [ ] Add specific rules to address common issues
 
 - [ ] Address FBT001/FBT002 warnings (many throughout the codebase)
-  - [ ] Replace boolean positional arguments with keyword-only arguments
-  - [ ] Update function signatures and calls throughout the codebase
+  - [ ] Replace boolean positional arguments with keyword-only arguments in `entitizer.py`
+  - [ ] Replace boolean positional arguments in `malmo_chunker.py`
+  - [ ] Replace boolean positional arguments in `malmo_orator.py`
   - [ ] Add type hints for boolean parameters
+  - [ ] Update function calls to use keyword arguments
 
 - [ ] Fix PLR0913 warnings (too many arguments)
-  - [ ] Refactor functions with too many parameters
+  - [ ] Refactor `malmo_all.py` functions with too many parameters
+  - [ ] Refactor `malmo_chunker.py` functions with too many parameters
+  - [ ] Refactor `malmo_orator.py` functions with too many parameters
   - [ ] Create parameter classes/dataclasses where appropriate
   - [ ] Use keyword arguments consistently
 
 - [ ] Fix datetime issues (DTZ005)
-  - [ ] Replace datetime.now() with datetime.now(timezone.utc)
-  - [ ] Update date/time handling for consistency
-  - [ ] Add proper timezone awareness
+  - [ ] Replace datetime.now() with datetime.now(timezone.utc) in `malmo_all.py`
+  - [ ] Replace datetime.now() in `malmo_chunker.py`
+  - [ ] Replace datetime.now() in `malmo_orator.py`
+  - [ ] Add proper timezone awareness throughout
 
 - [ ] Refactor complex functions (C901, PLR0912, PLR0915)
-  - [ ] Break down functions with high complexity
-  - [ ] Reduce branch complexity
-  - [ ] Reduce statement count
+  - [ ] Break down complex functions in `malmo_chunker.py`:
+    - [ ] `semantic_analysis` (complexity: 27)
+    - [ ] `extract_and_parse_llm_response` (complexity: 13)
+    - [ ] `add_unit_tags` (complexity: 14)
+    - [ ] `create_chunks` (complexity: 11)
+  - [ ] Break down complex functions in `malmo_all.py`:
+    - [ ] `run_step` (complexity: 13)
+    - [ ] `process_file` (complexity: 41)
+  - [ ] Break down complex functions in `malmo_orator.py`:
+    - [ ] `run_llm_processing` (complexity: 11)
 
 - [ ] Address security issues
-  - [ ] Fix lxml security warnings (S320)
+  - [ ] Fix lxml security warnings (S320) in:
+    - [ ] `malmo_11labs.py`
+    - [ ] `malmo_orator.py`
+    - [ ] `test_entitizer.py`
+    - [ ] `test_elevenlabs_converter.py`
   - [ ] Implement proper input sanitization
-  - [ ] Address subprocess security concerns (S603)
-  - [ ] Fix SHA1 usage (S324)
+  - [ ] Address subprocess security concerns (S603) in `malmo_all.py`
+  - [ ] Fix SHA1 usage (S324) in `malmo_chunker.py`
 
 ### 3.2. Code Structure Improvements
 
 - [ ] Implement consistent error handling
   - [ ] Create custom exception classes
   - [ ] Add exception hierarchy for different error types
-  - [ ] Use try/except with specific exceptions (B904)
+  - [ ] Fix B904 issues in `malmo_11labs.py` (raise with from)
 
 - [ ] Enhance module structure
   - [ ] Organize related functions into logical classes
@@ -172,13 +192,16 @@ The new code is in the `src/` folder.
 ### 3.3. Testing and CI/CD
 
 - [ ] Increase test coverage
-  - [x] Add tests for tonedown.py module (now at 38% coverage)
-  - [x] Add tests for orator.py module (now at 24% coverage)
-  - [x] Add tests for chunker.py module (now at 16% coverage, up from 7%)
-  - [x] Add tests for elevenlabs_converter.py module (now at 48% coverage)
-  - [x] Add tests for elevenlabs_synthesizer.py module (now at 89% coverage, up from 31%)
-  - [x] Add tests for neifix.py module (now at 95% coverage, up from 10%)
-  - [ ] Add tests for edge cases and error handling
+  - [x] Add tests for tonedown.py module (now at 38%)
+  - [x] Add tests for orator.py module (now at 70%)
+  - [x] Add tests for chunker.py module (now at 52%)
+  - [x] Add tests for elevenlabs_converter.py module (now at 69%)
+  - [x] Add tests for elevenlabs_synthesizer.py module (now at 88%)
+  - [x] Add tests for neifix.py module (now at 95%)
+  - [ ] Add tests for cli.py module (currently at 9%)
+  - [ ] Add tests for e11ocutionist.py module (currently at 18%)
+  - [ ] Add tests for entitizer.py module (currently at 29%)
+  - [ ] Add tests for utils.py module (currently at 42%)
 
 - [ ] Set up GitHub Actions workflow
   - [ ] Add workflow for running tests

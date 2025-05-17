@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doc>
+  <chunk id="0001" tok="1">
+    <unit type="chapter" tok="1">
+      <item xml:space="preserve" tok="1" id="000000-123456">
+        Error processing document: [Errno 2] No such file or directory: 'input.txt'
+      </item>
+    </unit>
+  </chunk>
+</doc>
