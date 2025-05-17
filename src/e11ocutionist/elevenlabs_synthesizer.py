@@ -13,34 +13,45 @@ import backoff
 from tenacity import retry, stop_after_attempt, wait_exponential
 from loguru import logger
 from pathlib import Path
+from typing import Any
 
 try:
-    from elevenlabs import Voice, VoiceSettings, generate, set_api_key, voices
+    from elevenlabs import Voice as ElevenLabsVoice
+    from elevenlabs import VoiceSettings, generate, set_api_key, voices
     from elevenlabs.api import Voices
 except ImportError:
-    logger.error(
-        "ElevenLabs API not available. Please install it with: pip install elevenlabs"
-    )
+    logger.error("ElevenLabs API not available. Install with: pip install elevenlabs")
 
     # Define placeholders to prevent errors
-    class Voice:
-        pass
+    class ElevenLabsVoice:
+        """Placeholder for ElevenLabs Voice class."""
+
+        def __init__(self) -> None:
+            self.name: str = ""
+            self.voice_id: str = ""
+            self.category: list[str] = []
 
     class VoiceSettings:
-        pass
+        """Placeholder for ElevenLabs VoiceSettings class."""
 
     class Voices:
-        pass
+        """Placeholder for ElevenLabs Voices class."""
 
-    def generate(*args, **kwargs):
+    def generate(*args: Any, **kwargs: Any) -> bytes:
+        """Placeholder for ElevenLabs generate function."""
         msg = "ElevenLabs API not available"
         raise ImportError(msg)
 
-    def set_api_key(*args, **kwargs):
-        pass
+    def set_api_key(*args: Any, **kwargs: Any) -> None:
+        """Placeholder for ElevenLabs set_api_key function."""
 
-    def voices(*args, **kwargs):
+    def voices(*args: Any, **kwargs: Any) -> list[ElevenLabsVoice]:
+        """Placeholder for ElevenLabs voices function."""
         return []
+
+
+# Type alias for Voice
+Voice = ElevenLabsVoice
 
 
 def sanitize_filename(name: str) -> str:
@@ -63,10 +74,13 @@ def sanitize_filename(name: str) -> str:
     return s[:100]
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def get_personal_voices(api_key: str) -> list[Voice]:
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+)
+def get_personal_voices(api_key: str | None) -> list[Voice]:
     """
-    Get all personal (cloned, generated, or professional) voices from ElevenLabs.
+    Get personal (cloned, generated, or professional) voices.
 
     Args:
         api_key: ElevenLabs API key
@@ -130,7 +144,10 @@ def synthesize_with_voice(
 
     # Sanitize the voice name for filename
     sanitized_name = sanitize_filename(voice.name)
-    output_path = os.path.join(output_dir, f"{voice.voice_id}--{sanitized_name}.mp3")
+    output_path = os.path.join(
+        output_dir,
+        f"{voice.voice_id}--{sanitized_name}.mp3",
+    )
 
     # Check if file already exists
     if os.path.exists(output_path):
@@ -139,7 +156,10 @@ def synthesize_with_voice(
 
     # Generate audio
     audio = generate(
-        text=text, voice=voice, model=model_id, output_format=output_format
+        text=text,
+        voice=voice,
+        model=model_id,
+        output_format=output_format,
     )
 
     # Save to file

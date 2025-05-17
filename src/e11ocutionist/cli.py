@@ -5,6 +5,7 @@
 import os
 from pathlib import Path
 import sys
+from typing import cast
 
 from loguru import logger
 
@@ -279,40 +280,47 @@ def say(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Synthesize text using ElevenLabs voices."""
+    """Run the say step."""
     _configure_logging(debug, verbose)
-    _validate_output_dir(output_dir)
+
+    # Validate input
+    if text is None and input_file is None:
+        msg = "Either 'text' or 'input_file' must be provided"
+        raise ValueError(msg)
 
     if text is not None and input_file is not None:
         msg = "Cannot provide both text and input file"
         raise ValueError(msg)
 
-    if text is None and input_file is not None:
-        with open(input_file, encoding="utf-8") as f:
-            text = f.read()
-    elif text is None:
-        msg = "Either 'text' or 'input_file' must be provided"
+    # Check for API key
+    api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
+    if not api_key:
+        msg = "ElevenLabs API key not provided"
         raise ValueError(msg)
 
-    if api_key is None:
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if not api_key:
-            msg = "ElevenLabs API key not provided"
-            raise ValueError(msg)
+    # Get text from input file if provided
+    if input_file is not None:
+        with open(input_file, encoding="utf-8") as f:
+            text = f.read()
+
+    # Validate output directory
+    _validate_output_dir(output_dir)
 
     try:
         result = synthesizer.synthesize_with_all_voices(
-            text=text,
+            text=text,  # type: ignore
             output_dir=output_dir,
             api_key=api_key,
             model_id=model_id,
             output_format=output_format,
         )
-        logger.info(f"Synthesis completed: {result}")
         return result
     except Exception as e:
-        logger.error(f"Processing failed: {e}")
-        raise
+        if isinstance(e, ValueError):
+            raise
+        msg = f"Processing failed: {e}"
+        logger.error(msg)
+        raise ValueError(msg) from e
 
 
 def fix_nei(
@@ -386,13 +394,14 @@ def process(  # noqa: PLR0913
     try:
         start_step_enum = ProcessingStep[start_step.upper()]
     except KeyError as e:
-        msg = f"Invalid start_step: {start_step}. Must be one of: {', '.join(step.name.lower() for step in ProcessingStep)}"
+        valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
+        msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
         raise ValueError(msg) from e
 
     # Create pipeline config
     config = PipelineConfig(
         input_file=input_path,
-        output_dir=Path(output_dir) if output_dir else None,
+        output_dir=(Path(output_dir) if output_dir else None),
         start_step=start_step_enum,
         force_restart=force_restart,
         backup=backup,
@@ -421,8 +430,6 @@ def process(  # noqa: PLR0913
     result = pipeline.run()
 
     # Return path to final output file
-    return str(
-        result["final_output_file"]
-        if "final_output_file" in result
-        else config.output_dir
-    )
+    if isinstance(result, dict) and "final_output_file" in result:
+        return str(cast(dict[str, str], result)["final_output_file"])
+    return str(config.output_dir)

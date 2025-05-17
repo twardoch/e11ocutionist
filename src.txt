@@ -1292,6 +1292,7 @@ def add_unit_tags_regex(
 import os
 from pathlib import Path
 import sys
+from typing import cast
 
 from loguru import logger
 
@@ -1566,40 +1567,47 @@ def say(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Synthesize text using ElevenLabs voices."""
+    """Run the say step."""
     _configure_logging(debug, verbose)
-    _validate_output_dir(output_dir)
+
+    # Validate input
+    if text is None and input_file is None:
+        msg = "Either 'text' or 'input_file' must be provided"
+        raise ValueError(msg)
 
     if text is not None and input_file is not None:
         msg = "Cannot provide both text and input file"
         raise ValueError(msg)
 
-    if text is None and input_file is not None:
-        with open(input_file, encoding="utf-8") as f:
-            text = f.read()
-    elif text is None:
-        msg = "Either 'text' or 'input_file' must be provided"
+    # Check for API key
+    api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
+    if not api_key:
+        msg = "ElevenLabs API key not provided"
         raise ValueError(msg)
 
-    if api_key is None:
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if not api_key:
-            msg = "ElevenLabs API key not provided"
-            raise ValueError(msg)
+    # Get text from input file if provided
+    if input_file is not None:
+        with open(input_file, encoding="utf-8") as f:
+            text = f.read()
+
+    # Validate output directory
+    _validate_output_dir(output_dir)
 
     try:
         result = synthesizer.synthesize_with_all_voices(
-            text=text,
+            text=text,  # type: ignore
             output_dir=output_dir,
             api_key=api_key,
             model_id=model_id,
             output_format=output_format,
         )
-        logger.info(f"Synthesis completed: {result}")
         return result
     except Exception as e:
-        logger.error(f"Processing failed: {e}")
-        raise
+        if isinstance(e, ValueError):
+            raise
+        msg = f"Processing failed: {e}"
+        logger.error(msg)
+        raise ValueError(msg) from e
 
 
 def fix_nei(
@@ -1673,13 +1681,14 @@ def process(  # noqa: PLR0913
     try:
         start_step_enum = ProcessingStep[start_step.upper()]
     except KeyError as e:
-        msg = f"Invalid start_step: {start_step}. Must be one of: {', '.join(step.name.lower() for step in ProcessingStep)}"
+        valid_steps = ", ".join(step.name.lower() for step in ProcessingStep)
+        msg = f"Invalid start_step: {start_step}. Must be one of: {valid_steps}"
         raise ValueError(msg) from e
 
     # Create pipeline config
     config = PipelineConfig(
         input_file=input_path,
-        output_dir=Path(output_dir) if output_dir else None,
+        output_dir=(Path(output_dir) if output_dir else None),
         start_step=start_step_enum,
         force_restart=force_restart,
         backup=backup,
@@ -1708,11 +1717,9 @@ def process(  # noqa: PLR0913
     result = pipeline.run()
 
     # Return path to final output file
-    return str(
-        result["final_output_file"]
-        if "final_output_file" in result
-        else config.output_dir
-    )
+    if isinstance(result, dict) and "final_output_file" in result:
+        return str(cast(dict[str, str], result)["final_output_file"])
+    return str(config.output_dir)
 </file>
 
 <file path="e11ocutionist/e11ocutionist.py">
@@ -2431,34 +2438,45 @@ import backoff
 from tenacity import retry, stop_after_attempt, wait_exponential
 from loguru import logger
 from pathlib import Path
+from typing import Any
 
 try:
-    from elevenlabs import Voice, VoiceSettings, generate, set_api_key, voices
+    from elevenlabs import Voice as ElevenLabsVoice
+    from elevenlabs import VoiceSettings, generate, set_api_key, voices
     from elevenlabs.api import Voices
 except ImportError:
-    logger.error(
-        "ElevenLabs API not available. Please install it with: pip install elevenlabs"
-    )
+    logger.error("ElevenLabs API not available. Install with: pip install elevenlabs")
 
     # Define placeholders to prevent errors
-    class Voice:
-        pass
+    class ElevenLabsVoice:
+        """Placeholder for ElevenLabs Voice class."""
+
+        def __init__(self) -> None:
+            self.name: str = ""
+            self.voice_id: str = ""
+            self.category: list[str] = []
 
     class VoiceSettings:
-        pass
+        """Placeholder for ElevenLabs VoiceSettings class."""
 
     class Voices:
-        pass
+        """Placeholder for ElevenLabs Voices class."""
 
-    def generate(*args, **kwargs):
+    def generate(*args: Any, **kwargs: Any) -> bytes:
+        """Placeholder for ElevenLabs generate function."""
         msg = "ElevenLabs API not available"
         raise ImportError(msg)
 
-    def set_api_key(*args, **kwargs):
-        pass
+    def set_api_key(*args: Any, **kwargs: Any) -> None:
+        """Placeholder for ElevenLabs set_api_key function."""
 
-    def voices(*args, **kwargs):
+    def voices(*args: Any, **kwargs: Any) -> list[ElevenLabsVoice]:
+        """Placeholder for ElevenLabs voices function."""
         return []
+
+
+# Type alias for Voice
+Voice = ElevenLabsVoice
 
 
 def sanitize_filename(name: str) -> str:
@@ -2481,10 +2499,13 @@ def sanitize_filename(name: str) -> str:
     return s[:100]
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def get_personal_voices(api_key: str) -> list[Voice]:
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+)
+def get_personal_voices(api_key: str | None) -> list[Voice]:
     """
-    Get all personal (cloned, generated, or professional) voices from ElevenLabs.
+    Get personal (cloned, generated, or professional) voices.
 
     Args:
         api_key: ElevenLabs API key
@@ -2548,7 +2569,10 @@ def synthesize_with_voice(
 
     # Sanitize the voice name for filename
     sanitized_name = sanitize_filename(voice.name)
-    output_path = os.path.join(output_dir, f"{voice.voice_id}--{sanitized_name}.mp3")
+    output_path = os.path.join(
+        output_dir,
+        f"{voice.voice_id}--{sanitized_name}.mp3",
+    )
 
     # Check if file already exists
     if os.path.exists(output_path):
@@ -2557,7 +2581,10 @@ def synthesize_with_voice(
 
     # Generate audio
     audio = generate(
-        text=text, voice=voice, model=model_id, output_format=output_format
+        text=text,
+        voice=voice,
+        model=model_id,
+        output_format=output_format,
     )
 
     # Save to file

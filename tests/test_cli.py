@@ -256,7 +256,11 @@ def test_say_command(mock_synthesize, sample_output_dir):
 
 
 @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
-def test_say_command_with_file(mock_synthesize, sample_input_file, sample_output_dir):
+def test_say_command_with_file(
+    mock_synthesize,
+    sample_input_file,
+    sample_output_dir,
+):
     """Test say command execution with input file."""
     # Set up mock return value
     mock_synthesize.return_value = sample_output_dir
@@ -391,7 +395,10 @@ def test_process_with_invalid_output_dir(mock_pipeline, sample_input_file):
 
 
 @patch("e11ocutionist.chunker.process_document")
-def test_chunk_command_with_invalid_model(mock_process_document, sample_input_file):
+def test_chunk_command_with_invalid_model(
+    mock_process_document,
+    sample_input_file,
+):
     """Test chunk command with invalid model name."""
     with pytest.raises(ValueError, match="Invalid model name"):
         chunk(sample_input_file, "output.xml", model="invalid-model")
@@ -407,10 +414,14 @@ def test_entitize_command_with_invalid_temperature(
 
 
 @patch("e11ocutionist.orator.process_document")
-def test_orate_command_no_steps_selected(mock_process_document, sample_input_file):
+def test_orate_command_no_steps_selected(
+    mock_process_document,
+    sample_input_file,
+):
     """Test orate command when no processing steps are selected."""
     with pytest.raises(
-        ValueError, match="At least one processing step must be selected"
+        ValueError,
+        match="At least one processing step must be selected",
     ):
         orate(
             sample_input_file,
@@ -442,9 +453,10 @@ def test_tonedown_command_invalid_min_em_distance(
 
 @patch("e11ocutionist.elevenlabs_converter.process_document")
 def test_convert_11labs_command_with_both_modes(
-    mock_process_document, sample_input_file
+    mock_process_document,
+    sample_input_file,
 ):
-    """Test convert_11labs command with both dialog and plaintext modes enabled."""
+    """Test convert_11labs command with both dialog and plaintext modes."""
     with pytest.raises(
         ValueError, match="Cannot enable both dialog and plaintext modes"
     ):
@@ -452,16 +464,32 @@ def test_convert_11labs_command_with_both_modes(
 
 
 @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
-def test_say_command_with_both_inputs(mock_synthesize, sample_input_file):
+def test_say_command_with_both_inputs(
+    mock_synthesize,
+    sample_input_file,
+):
     """Test say command with both text and input file provided."""
-    with pytest.raises(ValueError, match="Cannot provide both text and input file"):
-        say(text="Hello", input_file=sample_input_file, output_dir="output")
+    with pytest.raises(
+        ValueError,
+        match="Cannot provide both text and input file",
+    ):
+        say(
+            text="Hello",
+            input_file=sample_input_file,
+            output_dir="output",
+        )
 
 
 @patch("e11ocutionist.neifix.transform_nei_content")
-def test_neifix_command_same_input_output(mock_fix_nei, sample_input_file):
+def test_neifix_command_same_input_output(
+    mock_fix_nei,
+    sample_input_file,
+):
     """Test neifix command with same input and output file."""
-    with pytest.raises(ValueError, match="Input and output files must be different"):
+    with pytest.raises(
+        ValueError,
+        match="Input and output files must be different",
+    ):
         fix_nei(sample_input_file, sample_input_file)
 
 
