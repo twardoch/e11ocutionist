@@ -4,32 +4,15 @@ The old code that we are porting (for your reference) is in the `legacy_src/` fo
 
 The new code is in the `src/` folder.
 
-## 1. Critical: Fix Test Failures [PRIORITY: CRITICAL]
 
-- [ ] **Fix `ImportError` in `tests/test_cli.py`**
-    - **Reasoning:** Tests are failing to collect due to `ImportError: cannot import name 'process' from 'e11ocutionist.cli'`. This blocks all other test execution and reporting.
-    - **Plan:**
-        - Investigate `src/e11ocutionist/cli.py` to understand why the `process` function (or object) is not found or not exported correctly.
-        - Check for typos in `tests/test_cli.py` or `src/e11ocutionist/cli.py`.
-        - Ensure `src/e11ocutionist/cli.py` defines and correctly exports the `process` symbol.
-        - Modify `__init__.py` files if necessary to ensure proper module exports.
-        - Run `pytest tests/test_cli.py` locally to confirm the fix.
 
-## 2. Testing and Documentation [PRIORITY: HIGH]
+## 1. Testing and Documentation [PRIORITY: HIGH]
 
-### 2.1. Implement Unit Tests
+### 1.1. Implement Unit Tests
 
-- [ ] **Improve test coverage (currently at 11% overall)**
+- [ ] **Improve test coverage (currently at 69% overall)**
     - **Reasoning:** Low test coverage makes the codebase fragile and hard to refactor safely.
     - **Plan:** Incrementally increase coverage for all modules, focusing on critical paths first.
-
-  - [ ] **Implement unit tests for `cli.py` (currently at 9%)**
-    - **Plan:**
-        - After fixing the import error, identify main CLI commands and their functionalities.
-        - Write tests for command parsing (using `click.testing.CliRunner`).
-        - Test different command arguments and options (valid and invalid).
-        - Mock underlying service calls (e.g., `E11ocutionistPipeline`) to isolate CLI logic.
-        - Verify correct output and exit codes.
 
   - [ ] **Implement unit tests for `e11ocutionist.py` (pipeline orchestration, currently at 18%)**
     - **Plan:**
@@ -129,7 +112,7 @@ The new code is in the `src/` folder.
         - Design integration test scenarios where one module (e.g., `chunker`) is forced to produce an error or invalid output.
         - Verify that the pipeline (`e11ocutionist.py`) catches this error or that the next module in sequence handles the problematic input gracefully.
 
-### 2.2. Improve Documentation
+### 1.2. Improve Documentation
 
 - [ ] **Update README.md**
     - **Reasoning:** The README is the entry point for new users and contributors.
@@ -157,7 +140,7 @@ The new code is in the `src/` folder.
         - Add examples for each command and common combinations of options.
         - Generate a `CLI_USAGE.md` file or section in README with this information.
 
-### 2.3. Final Integration Tasks
+### 1.3. Final Integration Tasks
 
 - [ ] **Add comprehensive error handling in `src/`**
     - **Reasoning:** The application should be resilient to unexpected issues.
@@ -185,9 +168,9 @@ The new code is in the `src/` folder.
         - Document these workflows in the README or a separate `EXAMPLES.md` file.
         - Include sample input files and describe the expected outputs.
 
-## 3. Code Quality and Maintenance [PRIORITY: HIGH]
+## 2. Code Quality and Maintenance [PRIORITY: HIGH]
 
-### 3.1. Fix Linting Issues in `src/` (New Code)
+### 2.1. Fix Linting Issues in `src/` (New Code)
 
 - [ ] **Update `pyproject.toml` ruff configuration**
     - **Reasoning:** Ensure linting rules are appropriate for the project.
@@ -235,7 +218,7 @@ The new code is in the `src/` folder.
         - **B904 (raise from):** In `src/`, when re-raising exceptions, use `raise NewException from original_exception` to preserve context.
         - Regularly review `ruff` security warnings for new code in `src/`.
 
-### 3.2. Code Structure Improvements for `src/`
+### 2.2. Code Structure Improvements for `src/`
 
 - [ ] **Implement consistent error handling (using custom exceptions)**
     - **Previously mentioned in 2.3, also a code quality item.**
@@ -260,7 +243,7 @@ The new code is in the `src/` folder.
         - Add validation for configuration parameters (e.g., using Pydantic).
         - Provide sensible defaults and clear documentation for all configuration options.
 
-### 3.3. Testing and CI/CD
+### 2.3. Testing and CI/CD
 
 - [ ] **Set up GitHub Actions workflow**
     - **Reasoning:** Automated testing and linting improve code quality and catch regressions early.
@@ -272,9 +255,9 @@ The new code is in the `src/` folder.
         - **Publishing (Optional, later):** Add a job to build and publish the package to PyPI on tagged releases.
         - Trigger the workflow on pushes to `main` and on pull requests.
 
-## 4. Feature Enhancements [PRIORITY: LOW]
+## 3. Feature Enhancements [PRIORITY: LOW]
 
-### 4.1. User Experience Improvements
+### 3.1. User Experience Improvements
 
 - [ ] **Add detailed progress reporting for CLI**
     - **Reasoning:** Users need feedback on long-running operations.
