@@ -91,7 +91,6 @@ def test_chunk_command(
         model="gpt-4",
         temperature=0.2,
         verbose=True,
-        backup=True,
     )
 
     # Verify process_document was called with correct arguments
@@ -101,7 +100,6 @@ def test_chunk_command(
         model="gpt-4",
         temperature=0.2,
         verbose=True,
-        backup=True,
     )
     assert result == sample_output_file
 
@@ -420,11 +418,19 @@ def test_orate_command_no_steps_selected(mock_process_document, sample_input_fil
 
 @patch("e11ocutionist.tonedown.process_document")
 def test_tonedown_command_invalid_min_em_distance(
-    mock_process_document, sample_input_file
+    mock_process_document,
+    sample_input_file,
 ):
     """Test tonedown command with invalid minimum emphasis distance."""
-    with pytest.raises(ValueError, match="Minimum emphasis distance must be positive"):
-        tone_down(sample_input_file, "output.xml", min_em_distance=-1)
+    with pytest.raises(
+        ValueError,
+        match="Minimum emphasis distance must be positive",
+    ):
+        tone_down(
+            sample_input_file,
+            "output.xml",
+            min_em_distance=-1,
+        )
 
 
 @patch("e11ocutionist.elevenlabs_converter.process_document")
