@@ -2,9 +2,8 @@
 # this_file: tests/test_pipeline.py
 """Tests for the e11ocutionist pipeline configuration and integration."""
 
-import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

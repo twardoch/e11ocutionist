@@ -13,11 +13,11 @@ from e11ocutionist.cli import (
     chunk,
     convert_11labs,
     entitize,
-    neifix,
+    fix_nei,
     orate,
     process,
     say,
-    tonedown,
+    tone_down,
 )
 
 
@@ -182,12 +182,12 @@ def test_tonedown_command(
 ):
     """Test tonedown command execution."""
     # Call tonedown function
-    result = tonedown(
+    result = tone_down(
         sample_input_file,
         sample_output_file,
         model="gpt-4",
         temperature=0.1,
-        min_em_distance=5,
+        min_emphasis_distance=5,
         verbose=True,
     )
 
@@ -197,7 +197,7 @@ def test_tonedown_command(
         output_file=sample_output_file,
         model="gpt-4",
         temperature=0.1,
-        min_em_distance=5,
+        min_emphasis_distance=5,
         verbose=True,
     )
     assert result == sample_output_file
@@ -230,12 +230,8 @@ def test_convert_11labs_command(
     assert result == sample_output_file
 
 
-@patch("e11ocutionist.elevenlabs_synthesizer.process_document")
-def test_say_command(
-    mock_process_document,
-    sample_input_file,
-    sample_output_dir,
-):
+@patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+def test_say_command(mock_synthesize, sample_output_dir):
     """Test say command execution."""
     # Call say function with text
     result = say(
@@ -247,24 +243,19 @@ def test_say_command(
         verbose=True,
     )
 
-    # Verify process_document was called with correct arguments
-    mock_process_document.assert_called_once_with(
+    # Verify synthesize_with_all_voices was called with correct arguments
+    mock_synthesize.assert_called_once_with(
         text="Hello world",
         output_dir=sample_output_dir,
         api_key="test_key",
         model_id="eleven_multilingual_v2",
         output_format="mp3_44100_128",
-        verbose=True,
     )
     assert result == sample_output_dir
 
 
-@patch("e11ocutionist.elevenlabs_synthesizer.process_document")
-def test_say_command_with_file(
-    mock_process_document,
-    sample_input_file,
-    sample_output_dir,
-):
+@patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+def test_say_command_with_file(mock_synthesize, sample_input_file, sample_output_dir):
     """Test say command execution with input file."""
     # Call say function with input file
     result = say(
@@ -276,34 +267,23 @@ def test_say_command_with_file(
         verbose=True,
     )
 
-    # Verify process_document was called with correct arguments
-    mock_process_document.assert_called_once_with(
-        input_file=sample_input_file,
-        output_dir=sample_output_dir,
-        api_key="test_key",
-        model_id="eleven_multilingual_v2",
-        output_format="mp3_44100_128",
-        verbose=True,
-    )
+    # Verify synthesize_with_all_voices was called with correct arguments
+    mock_synthesize.assert_called_once()
     assert result == sample_output_dir
 
 
-@patch("e11ocutionist.neifix.process_document")
-def test_neifix_command(
-    mock_process_document,
-    sample_input_file,
-    sample_output_file,
-):
+@patch("e11ocutionist.neifix.transform_nei_content")
+def test_neifix_command(mock_fix_nei, sample_input_file, sample_output_file):
     """Test neifix command execution."""
     # Call neifix function
-    result = neifix(
+    result = fix_nei(
         sample_input_file,
         sample_output_file,
         verbose=True,
     )
 
-    # Verify process_document was called with correct arguments
-    mock_process_document.assert_called_once_with(
+    # Verify fix_nei_content was called with correct arguments
+    mock_fix_nei.assert_called_once_with(
         input_file=sample_input_file,
         output_file=sample_output_file,
     )
@@ -328,12 +308,12 @@ def test_say_command_missing_api_key(sample_output_dir):
 
 
 @patch.dict(os.environ, {"ELEVENLABS_API_KEY": "test_key"})
-@patch("e11ocutionist.elevenlabs_synthesizer.process_document")
-def test_say_command_env_api_key(mock_process_document, sample_output_dir):
+@patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+def test_say_command_env_api_key(mock_synthesize, sample_output_dir):
     """Test say command using API key from environment."""
     result = say(text="Hello", output_dir=sample_output_dir)
-    mock_process_document.assert_called_once()
-    assert mock_process_document.call_args[1]["api_key"] == "test_key"
+    mock_synthesize.assert_called_once()
+    assert mock_synthesize.call_args[1]["api_key"] == "test_key"
     assert result == sample_output_dir
 
 
@@ -389,3 +369,123 @@ def test_orate_selective_steps(
     assert "--punctuation" not in mock_process_document.call_args[1]["steps"]
     assert "--emotions" not in mock_process_document.call_args[1]["steps"]
     assert result == sample_output_file
+
+
+@patch("e11ocutionist.cli.E11ocutionistPipeline")
+def test_process_with_invalid_output_dir(mock_pipeline, sample_input_file):
+    """Test process function with invalid output directory."""
+    # Create a file where the output directory should be
+    with open("invalid_dir", "w") as f:
+        f.write("This is a file")
+
+    with pytest.raises(NotADirectoryError):
+        process(sample_input_file, output_dir="invalid_dir")
+
+    # Cleanup
+    os.remove("invalid_dir")
+
+
+@patch("e11ocutionist.chunker.process_document")
+def test_chunk_command_with_invalid_model(mock_process_document, sample_input_file):
+    """Test chunk command with invalid model name."""
+    with pytest.raises(ValueError, match="Invalid model name"):
+        chunk(sample_input_file, "output.xml", model="invalid-model")
+
+
+@patch("e11ocutionist.entitizer.process_document")
+def test_entitize_command_with_invalid_temperature(
+    mock_process_document, sample_input_file
+):
+    """Test entitize command with invalid temperature value."""
+    with pytest.raises(ValueError, match="Temperature must be between 0 and 1"):
+        entitize(sample_input_file, "output.xml", temperature=1.5)
+
+
+@patch("e11ocutionist.orator.process_document")
+def test_orate_command_no_steps_selected(mock_process_document, sample_input_file):
+    """Test orate command when no processing steps are selected."""
+    with pytest.raises(
+        ValueError, match="At least one processing step must be selected"
+    ):
+        orate(
+            sample_input_file,
+            "output.xml",
+            all_steps=False,
+            sentences=False,
+            words=False,
+            punctuation=False,
+            emotions=False,
+        )
+
+
+@patch("e11ocutionist.tonedown.process_document")
+def test_tonedown_command_invalid_min_em_distance(
+    mock_process_document, sample_input_file
+):
+    """Test tonedown command with invalid minimum emphasis distance."""
+    with pytest.raises(ValueError, match="Minimum emphasis distance must be positive"):
+        tone_down(sample_input_file, "output.xml", min_em_distance=-1)
+
+
+@patch("e11ocutionist.elevenlabs_converter.process_document")
+def test_convert_11labs_command_with_both_modes(
+    mock_process_document, sample_input_file
+):
+    """Test convert_11labs command with both dialog and plaintext modes enabled."""
+    with pytest.raises(
+        ValueError, match="Cannot enable both dialog and plaintext modes"
+    ):
+        convert_11labs(sample_input_file, "output.xml", dialog=True, plaintext=True)
+
+
+@patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
+def test_say_command_with_both_inputs(mock_synthesize, sample_input_file):
+    """Test say command with both text and input file provided."""
+    with pytest.raises(ValueError, match="Cannot provide both text and input file"):
+        say(text="Hello", input_file=sample_input_file, output_dir="output")
+
+
+@patch("e11ocutionist.neifix.transform_nei_content")
+def test_neifix_command_same_input_output(mock_fix_nei, sample_input_file):
+    """Test neifix command with same input and output file."""
+    with pytest.raises(ValueError, match="Input and output files must be different"):
+        fix_nei(sample_input_file, sample_input_file)
+
+
+@patch("e11ocutionist.cli.E11ocutionistPipeline")
+def test_process_with_backup_error(mock_pipeline, sample_input_file):
+    """Test process function when backup creation fails."""
+    mock_pipeline_instance = MagicMock()
+    mock_pipeline_instance.run.side_effect = PermissionError("Backup failed")
+    mock_pipeline.return_value = mock_pipeline_instance
+
+    with pytest.raises(PermissionError, match="Backup failed"):
+        process(sample_input_file, backup=True)
+
+
+@patch("e11ocutionist.cli.E11ocutionistPipeline")
+def test_process_with_custom_config(mock_pipeline, sample_input_file):
+    """Test process function with custom configuration."""
+    result = process(
+        sample_input_file,
+        chunker_model="gpt-3.5-turbo",
+        chunker_temperature=0.5,
+        entitizer_model="gpt-3.5-turbo",
+        entitizer_temperature=0.3,
+        orator_model="gpt-3.5-turbo",
+        orator_temperature=0.8,
+        tonedown_model="gpt-3.5-turbo",
+        tonedown_temperature=0.2,
+    )
+
+    mock_pipeline.assert_called_once()
+    config = mock_pipeline.call_args[0][0]
+    assert config.chunker_model == "gpt-3.5-turbo"
+    assert config.chunker_temperature == 0.5
+    assert config.entitizer_model == "gpt-3.5-turbo"
+    assert config.entitizer_temperature == 0.3
+    assert config.orator_model == "gpt-3.5-turbo"
+    assert config.orator_temperature == 0.8
+    assert config.tonedown_model == "gpt-3.5-turbo"
+    assert config.tonedown_temperature == 0.2
+    assert isinstance(result, str)
