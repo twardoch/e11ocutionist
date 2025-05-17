@@ -130,7 +130,7 @@ def test_synthesize_with_all_voices(mock_set_api_key, mock_synthesize, mock_get_
     ]
 
     # Call the function with explicit API key
-    result = synthesize_with_all_voices(
+    synthesize_with_all_voices(
         text="Test text",
         output_dir="output_dir",
         api_key="fake_api_key",

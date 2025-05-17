@@ -188,9 +188,14 @@ def orate(
             output_file=output_file,
             model=model,
             temperature=temperature,
-            steps=steps,
-            backup=backup,
+            all_steps=all_steps,
+            sentences=sentences,
+            words=words,
+            punctuation=punctuation,
+            emotions=emotions,
             verbose=verbose,
+            backup=backup,
+            steps=steps,
         )
         logger.info(f"Orating completed: {result}")
         return result

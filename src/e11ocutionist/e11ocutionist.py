@@ -13,7 +13,7 @@ import json
 import shutil
 import datetime
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -236,7 +236,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running chunking step")
 
-        step_name = ProcessingStep.CHUNKING.value
         input_file = self.config.input_file
         output_file = self.config.output_dir / f"{input_file.stem}_step1_chunked.xml"
 
@@ -245,7 +244,7 @@ class E11ocutionistPipeline:
 
         # Run the chunking process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.chunker_model,
@@ -315,7 +314,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running orating step")
 
-        step_name = ProcessingStep.ORATING.value
         prev_step = ProcessingStep.ENTITIZING.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
@@ -349,7 +347,7 @@ class E11ocutionistPipeline:
 
         # Run the orating process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.orator_model,
@@ -375,7 +373,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running toning down step")
 
-        step_name = ProcessingStep.TONING_DOWN.value
         prev_step = ProcessingStep.ORATING.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
@@ -402,7 +399,7 @@ class E11ocutionistPipeline:
                 else {}
             )
 
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 model=self.config.tonedown_model,
@@ -427,7 +424,6 @@ class E11ocutionistPipeline:
 
         logger.info("Running ElevenLabs conversion step")
 
-        step_name = ProcessingStep.ELEVENLABS_CONVERSION.value
         prev_step = ProcessingStep.TONING_DOWN.value
 
         if prev_step in self.progress and self.progress[prev_step].get(
@@ -447,7 +443,7 @@ class E11ocutionistPipeline:
 
         # Run the ElevenLabs conversion process
         try:
-            result = process_document(
+            process_document(
                 input_file=str(input_file),
                 output_file=str(output_file),
                 dialog=self.config.dialog_mode,
@@ -496,8 +492,7 @@ def main() -> None:
             debug=False,
         )
         pipeline = E11ocutionistPipeline(config)
-        final_output = pipeline.run()
-        print(f"Final output: {final_output}")
+        pipeline.run()
     except Exception as e:
         logger.error("An error occurred: %s", str(e))
         raise

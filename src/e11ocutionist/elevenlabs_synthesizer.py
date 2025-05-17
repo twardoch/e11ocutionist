@@ -9,11 +9,9 @@ personal ElevenLabs voices and save the result as audio files.
 
 import os
 import re
-from typing import Any
 import backoff
 from tenacity import retry, stop_after_attempt, wait_exponential
 from loguru import logger
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from pathlib import Path
 
 try:

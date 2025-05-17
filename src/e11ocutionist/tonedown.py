@@ -8,7 +8,6 @@ pronunciation cues and reducing excessive emphasis.
 """
 
 import json
-from typing import Any
 from loguru import logger
 from lxml import etree
 from dotenv import load_dotenv
