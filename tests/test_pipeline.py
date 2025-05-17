@@ -213,6 +213,10 @@ def test_pipeline_resume_from_step(basic_config):
     # Set start step to entitizing
     basic_config.start_step = ProcessingStep.ENTITIZING
 
+    # Create necessary input files
+    input_file = basic_config.output_dir / "input_step4_toneddown.xml"
+    input_file.write_text("<root>Test content</root>", encoding="utf-8")
+
     pipeline = E11ocutionistPipeline(basic_config)
 
     # Mock all processing steps
@@ -223,8 +227,9 @@ def test_pipeline_resume_from_step(basic_config):
         # Run pipeline
         pipeline.run()
 
-        # Verify chunking was skipped
+        # Verify chunker was not called
         mock_chunker.assert_not_called()
+        # Verify entitizer was called
         mock_entitizer.assert_called_once()
 
 
@@ -235,6 +240,10 @@ def test_pipeline_force_restart(basic_config):
     basic_config.start_step = ProcessingStep.ENTITIZING
 
     pipeline = E11ocutionistPipeline(basic_config)
+
+    # Create necessary input files
+    input_file = basic_config.output_dir / "input_step4_toneddown.xml"
+    input_file.write_text("<root>Test content</root>", encoding="utf-8")
 
     # Create fake progress
     progress_file = basic_config.output_dir / "progress.json"
@@ -248,7 +257,7 @@ def test_pipeline_force_restart(basic_config):
             "output_file": "test.xml",
         },
     }
-    progress_file.write_text(str(fake_progress))
+    progress_file.write_text(str(fake_progress), encoding="utf-8")
 
     # Mock all processing steps
     with (
@@ -258,6 +267,7 @@ def test_pipeline_force_restart(basic_config):
         # Run pipeline
         pipeline.run()
 
-        # Verify steps were called despite existing progress
+        # Verify entitizer was called (force restart)
         mock_entitizer.assert_called_once()
+        # Verify orator was called
         mock_orator.assert_called_once()

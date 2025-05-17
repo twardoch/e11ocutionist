@@ -30,33 +30,18 @@ def _configure_logging(debug: bool = False, verbose: bool = False) -> None:
     """Configure logging based on debug and verbose flags."""
     logger.remove()  # Remove default handler
 
-    if debug:
-        logger.add(
-            sys.stdout,
-            level="DEBUG",
-            format=(
-                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-                "<level>{level: <8}</level> | "
-                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-                "<level>{message}</level>"
-            ),
-        )
-    elif verbose:
-        logger.add(
-            sys.stdout,
-            level="INFO",
-            format=(
-                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-                "<level>{level: <8}</level> | "
-                "<level>{message}</level>"
-            ),
-        )
-    else:
-        logger.add(
-            sys.stdout,
-            level="WARNING",
-            format="<level>{message}</level>",
-        )
+    log_format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+        "<level>{level: <8}</level> | "
+        "<level>{message}</level>"
+    )
+
+    kwargs = {
+        "sink": sys.stdout,
+        "format": log_format,
+        "level": "DEBUG" if debug else "INFO" if verbose else "WARNING",
+    }
+    logger.add(**kwargs)
 
 
 def _validate_temperature(temperature: float) -> None:
@@ -86,6 +71,8 @@ def _validate_output_dir(output_dir: str | Path) -> None:
     if output_dir.exists() and not output_dir.is_dir():
         msg = f"{output_dir} exists and is not a directory"
         raise NotADirectoryError(msg)
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def chunk(
@@ -106,7 +93,7 @@ def chunk(
     logger.info(f"Output: {output_file}")
 
     try:
-        result = chunker.process_document(
+        chunker.process_document(
             input_file=input_file,
             output_file=output_file,
             model=model,
@@ -125,6 +112,7 @@ def entitize(
     output_file: str,
     model: str = "gpt-4",
     temperature: float = 0.1,
+    backup: bool = False,
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
@@ -138,11 +126,12 @@ def entitize(
     logger.info(f"Output: {output_file}")
 
     try:
-        result = entitizer.process_document(
+        entitizer.process_document(
             input_file=input_file,
             output_file=output_file,
             model=model,
             temperature=temperature,
+            backup=backup,
             verbose=verbose,
         )
         logger.info(f"Entitizing completed: {output_file}")
@@ -158,37 +147,40 @@ def orate(
     model: str = "gpt-4",
     temperature: float = 0.7,
     all_steps: bool = True,
-    sentences: bool = True,
-    words: bool = True,
-    punctuation: bool = True,
-    emotions: bool = True,
+    sentences: bool = False,
+    words: bool = False,
+    punctuation: bool = False,
+    emotions: bool = False,
+    backup: bool = False,
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the orating step."""
+    """Run the orate step."""
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
 
-    if not any([all_steps, sentences, words, punctuation, emotions]):
+    if not (all_steps or sentences or words or punctuation or emotions):
         msg = "At least one processing step must be selected"
         raise ValueError(msg)
-
-    logger.info("Running orating step:")
-    logger.info(f"Input: {input_file}")
-    logger.info(f"Output: {output_file}")
 
     steps = []
     if all_steps:
         steps.append("--all_steps")
-    if sentences:
-        steps.append("--sentences")
-    if words:
-        steps.append("--words")
-    if punctuation:
-        steps.append("--punctuation")
-    if emotions:
-        steps.append("--emotions")
+    else:
+        if sentences:
+            steps.append("--sentences")
+        if words:
+            steps.append("--words")
+        if punctuation:
+            steps.append("--punctuation")
+        if emotions:
+            steps.append("--emotions")
+
+    logger.info("Running orating step:")
+    logger.info(f"Input: {input_file}")
+    logger.info(f"Output: {output_file}")
+    logger.info(f"Steps: {steps}")
 
     try:
         result = orator.process_document(
@@ -197,10 +189,11 @@ def orate(
             model=model,
             temperature=temperature,
             steps=steps,
+            backup=backup,
             verbose=verbose,
         )
-        logger.info(f"Orating completed: {output_file}")
-        return output_file
+        logger.info(f"Orating completed: {result}")
+        return result
     except Exception as e:
         logger.error(f"Processing failed: {e}")
         raise
@@ -212,6 +205,7 @@ def tone_down(
     model: str = "gpt-4",
     temperature: float = 0.1,
     min_em_distance: int = 5,
+    backup: bool = False,
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
@@ -231,11 +225,11 @@ def tone_down(
             output_file=output_file,
             model=model,
             temperature=temperature,
-            min_emphasis_distance=min_em_distance,
+            min_em_distance=min_em_distance,
             verbose=verbose,
         )
-        logger.info(f"Tone down completed: {output_file}")
-        return output_file
+        logger.info(f"Tone down completed: {result}")
+        return result
     except Exception as e:
         logger.error(f"Processing failed: {e}")
         raise
@@ -300,25 +294,22 @@ def say(
         msg = "Either 'text' or 'input_file' must be provided"
         raise ValueError(msg)
 
-    # Get API key from environment if not provided
-    api_key = api_key or os.getenv("ELEVENLABS_API_KEY")
-    if not api_key:
-        msg = "ElevenLabs API key not provided"
-        raise ValueError(msg)
-
-    logger.info("Running speech synthesis:")
-    logger.info(f"Output directory: {output_dir}")
+    if api_key is None:
+        api_key = os.environ.get("ELEVENLABS_API_KEY")
+        if not api_key:
+            msg = "ElevenLabs API key not provided"
+            raise ValueError(msg)
 
     try:
-        synthesizer.synthesize_with_all_voices(
+        result = synthesizer.synthesize_with_all_voices(
             text=text,
             output_dir=output_dir,
             api_key=api_key,
             model_id=model_id,
             output_format=output_format,
         )
-        logger.info(f"Speech synthesis completed: {output_dir}")
-        return output_dir
+        logger.info(f"Synthesis completed: {result}")
+        return result
     except Exception as e:
         logger.error(f"Processing failed: {e}")
         raise

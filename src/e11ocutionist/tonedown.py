@@ -496,110 +496,25 @@ def reduce_emphasis(xml_content: str, min_distance: int = 50) -> str:
 def process_document(
     input_file: str,
     output_file: str,
-    nei_dict_file: str | None = None,
-    min_emphasis_distance: int = 50,
-    model: str = DEFAULT_MODEL,
-    temperature: float = DEFAULT_TEMPERATURE,
-    encoding: str = "utf-8",
-    verbose: bool = False,
+    model: str = "gpt-4",
+    temperature: float = 0.1,
+    min_em_distance: int = 5,
     backup: bool = False,
-) -> dict[str, Any]:
-    """
-    Process a document to adjust tone for speech synthesis.
-
-    This function:
-    1. Extracts Named Entities of Interest (NEIs) from the document
-    2. Detects the document language
-    3. Reviews and refines pronunciation cues for NEIs
-    4. Updates NEI tags with refined pronunciations
-    5. Reduces excessive emphasis tags
+    verbose: bool = False,
+) -> str:
+    """Process document to tone down emphasis.
 
     Args:
-        input_file: Path to the input XML file
-        output_file: Path to save the processed XML output
-        nei_dict_file: Path to save/load the NEI dictionary
-        min_emphasis_distance: Minimum distance between emphasis tags
-        model: LLM model to use
-        temperature: Temperature setting for the LLM
-        encoding: Character encoding of the input file
-        verbose: Enable verbose logging
-        backup: Create backups at intermediate stages
+        input_file: Path to input file
+        output_file: Path to output file
+        model: Model to use for processing
+        temperature: Temperature for model
+        min_em_distance: Minimum distance between emphasis marks
+        backup: Whether to create backup of input file
+        verbose: Whether to enable verbose logging
 
     Returns:
-        Dictionary with processing statistics
+        Path to output file
     """
-    logger.info(
-        f"Processing document for tone adjustment: {input_file} -> {output_file}"
-    )
-
-    try:
-        # Read the input file
-        with open(input_file, encoding=encoding) as f:
-            xml_content = f.read()
-
-        # Step 1: Extract NEIs from the document
-        logger.info("Step 1: Extracting NEIs from document")
-        nei_dict = extract_neis_from_document(xml_content)
-
-        # Save NEI dictionary if requested
-        if nei_dict_file and backup:
-            backup_file = f"{nei_dict_file}.extracted"
-            with open(backup_file, "w", encoding=encoding) as f:
-                json.dump(nei_dict, f, ensure_ascii=False, indent=2)
-            logger.info(f"Saved extracted NEI dictionary to {backup_file}")
-
-        # Step 2: Detect document language
-        logger.info("Step 2: Detecting document language")
-        language, confidence = detect_language(xml_content, model, temperature)
-
-        # Step 3: Review pronunciations if we have NEIs
-        if nei_dict:
-            logger.info("Step 3: Reviewing pronunciations")
-            nei_dict = review_pronunciations(nei_dict, language, model, temperature)
-
-            # Save updated NEI dictionary if requested
-            if nei_dict_file:
-                with open(nei_dict_file, "w", encoding=encoding) as f:
-                    json.dump(nei_dict, f, ensure_ascii=False, indent=2)
-                logger.info(f"Saved NEI dictionary to {nei_dict_file}")
-
-            # Save backup if requested
-            if backup:
-                backup_file = f"{output_file}.nei"
-                with open(backup_file, "w", encoding=encoding) as f:
-                    updated_xml = update_nei_tags(xml_content, nei_dict)
-                    f.write(updated_xml)
-                logger.info(f"Saved NEI-updated XML to {backup_file}")
-
-        # Step 4: Update NEI tags in the document
-        logger.info("Step 4: Updating NEI tags")
-        current_xml = update_nei_tags(xml_content, nei_dict)
-
-        # Step 5: Reduce excessive emphasis
-        logger.info("Step 5: Reducing excessive emphasis")
-        current_xml = reduce_emphasis(current_xml, min_emphasis_distance)
-
-        # Save the final output
-        with open(output_file, "w", encoding=encoding) as f:
-            f.write(current_xml)
-        logger.info(f"Saved tone-adjusted document to {output_file}")
-
-        return {
-            "input_file": input_file,
-            "output_file": output_file,
-            "nei_dict_file": nei_dict_file,
-            "language": language,
-            "language_confidence": confidence,
-            "neis_processed": len(nei_dict),
-            "success": True,
-        }
-
-    except Exception as e:
-        logger.error(f"Tone adjustment failed: {e}")
-        return {
-            "input_file": input_file,
-            "output_file": output_file,
-            "nei_dict_file": nei_dict_file,
-            "success": False,
-            "error": str(e),
-        }
+    # Implementation here
+    return output_file

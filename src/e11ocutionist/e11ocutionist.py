@@ -120,28 +120,32 @@ class E11ocutionistPipeline:
         # Initialize progress file if it doesn't exist or force_restart is True
         if not self.progress_file.exists() or self.config.force_restart:
             self.progress = {}
-            self.progress_file.write_text("")  # Empty file
+            self._save_progress()
         else:
             self._load_progress()
 
     def _load_progress(self) -> None:
         """Load progress from file."""
-        try:
-            content = self.progress_file.read_text()
-            if content:
-                self.progress = json.loads(content)
-            else:
-                self.progress = {}
-        except json.JSONDecodeError:
+        if not self.progress_file:
+            self.progress = {}
+            return
+
+        content = self.progress_file.read_text(encoding="utf-8").strip()
+        if content:
+            self.progress = json.loads(content)
+        else:
             self.progress = {}
 
     def _save_progress(self) -> None:
         """Save progress to file."""
-        with self.progress_file.open("w") as f:
-            if self.progress:
-                json.dump(self.progress, f)
+        if not self.progress_file:
+            return
+
+        with open(self.progress_file, "w", encoding="utf-8") as f:
+            if not self.progress:
+                f.write("")
             else:
-                f.write("")  # Empty file
+                json.dump(self.progress, f, indent=2)
 
     def _create_backup(self, file_path: Path) -> None:
         """Create a backup of the specified file.
@@ -178,8 +182,12 @@ class E11ocutionistPipeline:
         }
         self._save_progress()
 
-    def run(self) -> None:
-        """Run the pipeline."""
+    def run(self) -> str:
+        """Run the pipeline.
+
+        Returns:
+            Path to the final output file
+        """
         try:
             self._setup_output_directory()
 
@@ -195,10 +203,29 @@ class E11ocutionistPipeline:
                     start_step_found = True
 
                 if start_step_found:
-                    step_method = getattr(self, f"_run_{step.value}")
-                    step_method()
+                    try:
+                        step_method = getattr(self, f"_run_{step.value}")
+                        step_method()
+                    except Exception as e:
+                        logger.error(f"Error in {step.value} step: {e}")
+                        self._update_progress(step, "", completed=False)
+                        raise
+
+            # Get the final output file from the last completed step
+            final_output = None
+            for step in reversed(list(ProcessingStep)):
+                if step.value in self.progress and self.progress[step.value].get(
+                    "completed", False
+                ):
+                    final_output = self.progress[step.value]["output_file"]
+                    break
+
+            if final_output is None:
+                final_output = str(self.config.output_dir)
 
             logger.info("Pipeline completed successfully")
+            return final_output
+
         except Exception as e:
             logger.error(f"Pipeline failed: {e}")
             raise
@@ -469,7 +496,8 @@ def main() -> None:
             debug=False,
         )
         pipeline = E11ocutionistPipeline(config)
-        pipeline.run()
+        final_output = pipeline.run()
+        print(f"Final output: {final_output}")
     except Exception as e:
         logger.error("An error occurred: %s", str(e))
         raise

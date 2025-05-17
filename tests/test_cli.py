@@ -138,6 +138,9 @@ def test_orate_command(
     sample_output_file,
 ):
     """Test orate command execution."""
+    # Set up mock return value
+    mock_process_document.return_value = sample_output_file
+
     # Call orate function
     result = orate(
         sample_input_file,
@@ -177,13 +180,16 @@ def test_tonedown_command(
     sample_output_file,
 ):
     """Test tonedown command execution."""
+    # Set up mock return value
+    mock_process_document.return_value = sample_output_file
+
     # Call tonedown function
     result = tone_down(
         sample_input_file,
         sample_output_file,
         model="gpt-4",
         temperature=0.1,
-        min_emphasis_distance=5,
+        min_em_distance=5,
         verbose=True,
     )
 
@@ -193,7 +199,7 @@ def test_tonedown_command(
         output_file=sample_output_file,
         model="gpt-4",
         temperature=0.1,
-        min_emphasis_distance=5,
+        min_em_distance=5,
         verbose=True,
     )
     assert result == sample_output_file
@@ -229,6 +235,9 @@ def test_convert_11labs_command(
 @patch("e11ocutionist.elevenlabs_synthesizer.synthesize_with_all_voices")
 def test_say_command(mock_synthesize, sample_output_dir):
     """Test say command execution."""
+    # Set up mock return value
+    mock_synthesize.return_value = sample_output_dir
+
     # Call say function with text
     result = say(
         text="Hello world",

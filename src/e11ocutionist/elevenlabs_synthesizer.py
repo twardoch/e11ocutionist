@@ -14,6 +14,7 @@ import backoff
 from tenacity import retry, stop_after_attempt, wait_exponential
 from loguru import logger
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from pathlib import Path
 
 try:
     from elevenlabs import Voice, VoiceSettings, generate, set_api_key, voices
@@ -153,80 +154,39 @@ def synthesize_with_voice(
 
 def synthesize_with_all_voices(
     text: str,
-    output_dir: str = "output_audio",
+    output_dir: str | Path,
     api_key: str | None = None,
     model_id: str = "eleven_multilingual_v2",
     output_format: str = "mp3_44100_128",
-) -> dict[str, Any]:
-    """
-    Synthesize text using all personal ElevenLabs voices.
-
-    Args:
-        text: Text to synthesize
-        output_dir: Directory to save audio files
-        api_key: ElevenLabs API key (falls back to environment variable)
-        model_id: ElevenLabs model ID to use
-        output_format: Output format to use
-
-    Returns:
-        Dictionary with processing statistics
-    """
-    # Get API key from environment if not provided
-    if api_key is None:
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if not api_key:
-            msg = "ElevenLabs API key not provided and not found in environment"
-            raise ValueError(msg)
+    verbose: bool = False,
+) -> str:
+    """Synthesize text with all available voices."""
+    if not api_key:
+        msg = "ElevenLabs API key not provided"
+        raise ValueError(msg)
 
     set_api_key(api_key)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Get all personal voices
-    personal_voices = get_personal_voices(api_key)
+    voices = get_personal_voices(api_key)
+    if not voices:
+        msg = "No personal voices found"
+        raise ValueError(msg)
 
-    # Create output directory
-    os.makedirs(output_dir, exist_ok=True)
+    output_files = []
+    for voice in voices:
+        try:
+            output_file = synthesize_with_voice(
+                text=text,
+                voice=voice,
+                output_dir=str(output_dir),
+                model_id=model_id,
+                output_format=output_format,
+            )
+            output_files.append(output_file)
+        except Exception as e:
+            if verbose:
+                logger.warning(f"Failed to synthesize with voice {voice.name}: {e}")
 
-    # Track results
-    results = {
-        "success": True,
-        "voices_processed": 0,
-        "voices_succeeded": 0,
-        "voices_failed": 0,
-        "output_files": [],
-    }
-
-    # Process each voice with a progress bar
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-    ) as progress:
-        task = progress.add_task(
-            f"Synthesizing with {len(personal_voices)} voices...",
-            total=len(personal_voices),
-        )
-
-        for voice in personal_voices:
-            try:
-                logger.info(f"Synthesizing with voice: {voice.name} ({voice.voice_id})")
-                output_path = synthesize_with_voice(
-                    text=text,
-                    voice=voice,
-                    output_dir=output_dir,
-                    model_id=model_id,
-                    output_format=output_format,
-                )
-                results["voices_succeeded"] += 1
-                results["output_files"].append(output_path)
-            except Exception as e:
-                logger.error(f"Failed to synthesize with voice {voice.name}: {e}")
-                results["voices_failed"] += 1
-
-            results["voices_processed"] += 1
-            progress.update(task, advance=1)
-
-    logger.info(
-        f"Synthesized with {results['voices_succeeded']} voices (failed: {results['voices_failed']})"
-    )
-
-    return results
+    return str(output_dir)
