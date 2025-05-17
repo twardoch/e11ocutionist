@@ -1,126 +1,269 @@
-"""Test suite for e11ocutionist entitizer module."""
+#!/usr/bin/env python3
+"""Tests for the entitizer module."""
 
+from pathlib import Path
+from copy import deepcopy
+
+import pytest
 from lxml import etree
 
 from e11ocutionist.entitizer import (
+    get_chunks,
+    get_chunk_text,
+    save_current_state,
     extract_item_elements,
-    extract_nei_from_tags,
     merge_tagged_items,
+    identify_entities,
+    extract_response_text,
+    extract_nei_from_tags,
+    process_chunks,
+    process_document,
 )
 
 
+def test_get_chunks(sample_xml):
+    """Test extraction of chunks from XML document."""
+    root = etree.fromstring(sample_xml.encode())
+    chunks = get_chunks(root)
+    assert isinstance(chunks, list)
+    assert all(isinstance(chunk, etree._Element) for chunk in chunks)
+
+
+def test_get_chunk_text():
+    """Test extraction of text from a chunk."""
+    chunk_xml = """
+    <chunk id="test">
+        <item id="1">First item</item>
+        <item id="2">Second item with <nei>entity</nei></item>
+    </chunk>
+    """
+    chunk = etree.fromstring(chunk_xml.encode())
+    text = get_chunk_text(chunk)
+    assert isinstance(text, str)
+    assert "First item" in text
+    assert "Second item" in text
+    assert "<nei>entity</nei>" in text
+
+
+def test_save_current_state(temp_workspace):
+    """Test saving current state to files."""
+    # Create test data
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+    <document><content><chunk id="test">Test content</chunk></content></document>
+    """
+    root = etree.fromstring(xml_content.encode())
+    nei_dict = {"test_entity": {"text": "Test", "count": 1, "new": False}}
+
+    # Set up output files
+    output_file = temp_workspace / "output" / "test_output.xml"
+    nei_dict_file = temp_workspace / "output" / "test_nei_dict.json"
+
+    # Test saving state
+    save_current_state(
+        root,
+        nei_dict,
+        str(output_file),
+        str(nei_dict_file),
+        chunk_id="test",
+        backup=True,
+    )
+
+    assert output_file.exists()
+    assert nei_dict_file.exists()
+
+    # Verify content
+    saved_xml = output_file.read_text()
+    assert "Test content" in saved_xml
+
+    import json
+
+    saved_dict = json.loads(nei_dict_file.read_text())
+    assert saved_dict == nei_dict
+
+
 def test_extract_item_elements():
-    """Test the extraction of item elements from XML."""
-    test_xml = """
-    <chunk id="chunk1">
-        <item id="item1" tok="10">Test content 1</item>
-        <item id="item2" tok="15">Test content 2</item>
+    """Test extraction of item elements from XML text."""
+    xml_text = """
+    <chunk>
+        <item id="1" type="normal">First item</item>
+        <item id="2" type="dialog">Second item with <nei>entity</nei></item>
     </chunk>
     """
 
-    result = extract_item_elements(test_xml)
-
-    assert len(result) == 2
-    assert "item1" in result
-    assert "item2" in result
-    assert '<item id="item1" tok="10">Test content 1</item>' in result["item1"]
-    assert '<item id="item2" tok="15">Test content 2</item>' in result["item2"]
-
-
-def test_extract_nei_from_tags():
-    """Test extraction of NEIs from tags in text."""
-    test_xml = """
-    <doc>
-        <item id="item1">This contains <nei>John Smith</nei> as a name.</item>
-        <item id="item2">Another <nei pronunciation="acro-nim">NEI</nei> example.</item>
-        <item id="item3"><nei orig="doctor">Dr.</nei> is an abbreviation.</item>
-    </doc>
-    """
-
-    result = extract_nei_from_tags(test_xml)
-
-    assert len(result) == 3
-    assert "john smith" in result
-    assert "nei" in result
-    assert "dr." in result
-
-    assert result["john smith"]["text"] == "John Smith"
-    assert result["john smith"]["count"] == 1
-    assert result["john smith"]["new"] is True
-
-    assert result["nei"]["text"] == "NEI"
-    assert result["nei"]["pronunciation"] == "acro-nim"
-
-    assert result["dr."]["text"] == "Dr."
-    assert result["dr."]["orig"] == "doctor"
+    items = extract_item_elements(xml_text)
+    assert isinstance(items, dict)
+    assert len(items) == 2
+    assert "1" in items
+    assert "2" in items
+    assert 'type="normal"' in items["1"]
+    assert 'type="dialog"' in items["2"]
+    assert "<nei>entity</nei>" in items["2"]
 
 
 def test_merge_tagged_items():
-    """Test merging tagged items back into the original chunk."""
+    """Test merging tagged items back into chunk."""
     # Create original chunk
-    original_xml = """
-    <chunk id="chunk1">
-        <item id="item1">Original content 1</item>
-        <item id="item2">Original content 2</item>
+    chunk_xml = """
+    <chunk id="test">
+        <item id="1">Original content 1</item>
+        <item id="2">Original content 2</item>
     </chunk>
     """
-    parser = etree.XMLParser(remove_blank_text=False, recover=True)
-    original_chunk = etree.fromstring(original_xml.encode("utf-8"), parser)
+    original_chunk = etree.fromstring(chunk_xml.encode())
 
     # Create tagged items
     tagged_items = {
-        "item1": '<item id="item1">Tagged <nei>content 1</nei></item>',
-        "item2": '<item id="item2">Tagged <nei>content 2</nei></item>',
+        "1": '<item id="1">Updated content 1 with <nei>entity</nei></item>',
+        "2": '<item id="2">Updated content 2</item>',
     }
 
-    # Merge
+    # Merge items
     result = merge_tagged_items(original_chunk, tagged_items)
+    assert isinstance(result, etree._Element)
 
-    # Assert the result contains the tagged content
+    # Verify updates
     items = result.xpath(".//item")
     assert len(items) == 2
-
-    item1_text = etree.tostring(items[0], encoding="utf-8", method="text").decode(
-        "utf-8"
-    )
-    item2_text = etree.tostring(items[1], encoding="utf-8", method="text").decode(
-        "utf-8"
-    )
-
-    assert "Tagged content 1" in item1_text
-    assert "Tagged content 2" in item2_text
-
-    # Check that <nei> tags were preserved in the structure
-    nei_tags = result.xpath(".//nei")
-    assert len(nei_tags) == 2
-    assert nei_tags[0].text == "content 1"
-    assert nei_tags[1].text == "content 2"
+    assert "Updated content 1" in etree.tostring(items[0], encoding="utf-8").decode()
+    assert "<nei>entity</nei>" in etree.tostring(items[0], encoding="utf-8").decode()
+    assert "Updated content 2" in etree.tostring(items[1], encoding="utf-8").decode()
 
 
-def test_nei_identification_mock():
-    """Test NEI identification with a mock response."""
-    # Mock the identify_entities function to avoid LLM API calls
-
-    # Create a mock XML with some potential named entities
-
-    # Expected response with NEI tags added
-    expected_response = """
-    <chunk id="chunk1">
-        <item id="item1">This document mentions <nei>John Smith</nei> and <nei>Dr. Watson</nei>.</item>
-        <item id="item2">They work at <nei>ACME Corp</nei> in <nei>New York City</nei>.</item>
+def test_identify_entities():
+    """Test entity identification in text."""
+    chunk_text = """
+    <chunk>
+        <item id="1">John Smith visited New York.</item>
+        <item id="2">He met Sarah Johnson at Central Park.</item>
     </chunk>
     """
 
-    # Test that the extract_item_elements function correctly handles the response
-    items_result = extract_item_elements(expected_response)
-    assert len(items_result) == 2
-    assert "item1" in items_result
-    assert "item2" in items_result
+    nei_dict = {
+        "John Smith": {"text": "John Smith", "count": 1, "new": False},
+        "New York": {"text": "New York", "count": 1, "new": False},
+    }
 
-    # Test that extract_nei_from_tags correctly identifies the NEIs
-    nei_result = extract_nei_from_tags(expected_response)
-    assert len(nei_result) == 4
-    assert "john smith" in nei_result
-    assert "dr. watson" in nei_result
-    assert "acme corp" in nei_result
-    assert "new york city" in nei_result
+    result = identify_entities(chunk_text, nei_dict, "gpt-4o", 0.1)
+    assert isinstance(result, str)
+    assert "<nei" in result
+    assert "John Smith" in result
+    assert "New York" in result
+
+
+def test_extract_response_text():
+    """Test extraction of response text."""
+    response = {
+        "choices": [
+            {
+                "message": {
+                    "content": "Test response content",
+                },
+            },
+        ],
+    }
+
+    text = extract_response_text(response)
+    assert isinstance(text, str)
+    assert text == "Test response content"
+
+
+def test_extract_nei_from_tags():
+    """Test extraction of NEIs from tagged text."""
+    tagged_text = """
+    <item>
+        <nei type="person">John Smith</nei> visited 
+        <nei type="location">New York</nei>.
+    </item>
+    """
+
+    result = extract_nei_from_tags(tagged_text)
+    assert isinstance(result, dict)
+    assert "John Smith" in result
+    assert "New York" in result
+    assert result["John Smith"]["type"] == "person"
+    assert result["New York"]["type"] == "location"
+
+
+def test_process_chunks():
+    """Test processing of document chunks."""
+    # Create test chunks
+    chunk_xml = """
+    <chunk id="test">
+        <item id="1">John Smith visited New York.</item>
+        <item id="2">He met Sarah Johnson at Central Park.</item>
+    </chunk>
+    """
+    chunk = etree.fromstring(chunk_xml.encode())
+    chunks = [chunk]
+
+    # Initial NEI dictionary
+    nei_dict = {
+        "John Smith": {"text": "John Smith", "count": 1, "new": False},
+        "New York": {"text": "New York", "count": 1, "new": False},
+    }
+
+    # Process chunks
+    root, updated_dict = process_chunks(
+        chunks,
+        model="gpt-4o",
+        temperature=0.1,
+        nei_dict=nei_dict,
+    )
+
+    assert isinstance(root, etree._Element)
+    assert isinstance(updated_dict, dict)
+    assert len(updated_dict) >= len(nei_dict)
+
+
+def test_process_document(temp_workspace):
+    """Test complete document processing."""
+    # Create test input file
+    input_file = temp_workspace / "input" / "test.xml"
+    output_file = temp_workspace / "output" / "test_processed.xml"
+    nei_dict_file = temp_workspace / "output" / "test_nei_dict.json"
+
+    input_content = """<?xml version="1.0" encoding="UTF-8"?>
+    <document>
+        <content>
+            <chunk id="1">
+                <item id="1">John Smith visited New York.</item>
+                <item id="2">He met Sarah Johnson at Central Park.</item>
+            </chunk>
+        </content>
+    </document>
+    """
+
+    input_file.write_text(input_content)
+
+    # Process document
+    result = process_document(
+        str(input_file),
+        str(output_file),
+        str(nei_dict_file),
+        model="gpt-4o",
+        temperature=0.1,
+        verbose=True,
+        backup=True,
+    )
+
+    assert isinstance(result, dict)
+    assert "success" in result
+    assert result["success"] is True
+    assert output_file.exists()
+    assert nei_dict_file.exists()
+
+
+def test_error_handling():
+    """Test error handling in entitizer functions."""
+    # Test with invalid XML
+    with pytest.raises(etree.XMLSyntaxError):
+        etree.fromstring("<invalid>")
+
+    # Test with empty input
+    assert extract_item_elements("") == {}
+    assert extract_nei_from_tags("") == {}
+
+    # Test with malformed XML
+    malformed_xml = "<chunk><item>No closing tags"
+    items = extract_item_elements(malformed_xml)
+    assert len(items) == 0

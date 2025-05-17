@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <metadata>
+        <title>Test Document</title>
+        <author>Test Author</author>
+        <language>en</language>
+    </metadata>
+    <content>
+        <paragraph>
+            This is a test paragraph with some text. It contains a 
+            <nei type="person">John Smith</nei> as a named entity.
+        </paragraph>
+        <dialog speaker="Alice">
+            "Hello," said <nei type="person">Alice Johnson</nei>, looking at 
+            <nei type="person" new="true">Bob Wilson</nei>.
+        </dialog>
+        <paragraph>
+            The <nei type="organization">United Nations</nei> announced today that
+            <nei type="person" orig="Elizabeth">Liz</nei> would be speaking.
+        </paragraph>
+        <dialog speaker="Bob">
+            "Indeed," replied <nei type="person">Bob Wilson</nei>, "this is 
+            <em>very</em> important news."
+        </dialog>
+        <paragraph>
+            Later that day at the <nei type="location">Central Park</nei>, they 
+            discussed the <em>critical</em> situation. It was a <em>very</em> 
+            serious matter.
+        </paragraph>
+        <dialog>
+            "We must act <em>quickly</em>," someone said from the crowd.
+        </dialog>
+    </content>
+</document> 

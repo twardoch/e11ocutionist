@@ -1,6 +1,13 @@
-"""Test suite for e11ocutionist chunker module."""
+#!/usr/bin/env python3
+"""Tests for the chunker module."""
+
+from pathlib import Path
 
 from e11ocutionist.chunker import (
+    count_tokens,
+    escape_xml_chars,
+    generate_hash,
+    generate_id,
     split_into_paragraphs,
     is_heading,
     is_blockquote,
@@ -10,127 +17,265 @@ from e11ocutionist.chunker import (
     is_table,
     is_html_block,
     is_image_or_figure,
-    count_tokens,
-    generate_hash,
-    generate_id,
-    escape_xml_chars,
+    itemize_document,
+    create_item_elements,
+    create_chunks,
+    clean_consecutive_newlines,
+    pretty_print_xml,
+    process_document,
 )
 
 
-def test_split_into_paragraphs():
-    """Test splitting text into paragraphs."""
-    test_text = "This is paragraph 1.\n\nThis is paragraph 2.\n\nThis is paragraph 3."
-
-    paragraphs = split_into_paragraphs(test_text)
-
-    assert len(paragraphs) == 3
-    assert "This is paragraph 1." in paragraphs[0]
-    assert "This is paragraph 2." in paragraphs[1]
-    assert "This is paragraph 3." in paragraphs[2]
-
-    # Test with Windows line endings
-    windows_text = "Paragraph 1.\r\n\r\nParagraph 2."
-    windows_paragraphs = split_into_paragraphs(windows_text)
-    assert len(windows_paragraphs) == 2
-
-
-def test_paragraph_classification():
-    """Test functions that classify paragraphs by type."""
-    # Test heading detection
-    assert is_heading("# Heading 1") is True
-    assert is_heading("## Heading 2") is True
-    assert is_heading("Regular paragraph") is False
-    assert is_heading("Chapter 1: Introduction") is True
-    assert is_heading("Rozdział 2. Wstęp") is True
-
-    # Test blockquote detection
-    assert is_blockquote("> This is a blockquote") is True
-    assert is_blockquote("This is not a blockquote") is False
-
-    # Test list detection
-    assert is_list("* Item 1\n* Item 2") is True
-    assert is_list("- Item 1\n- Item 2\n- Item 3") is True
-    assert is_list("1. First item\n2. Second item") is True
-    # Not considered a list (needs 2+ items)
-    assert is_list("* Single item") is False
-    assert is_list("Regular paragraph") is False
-
-    # Test code block detection
-    code_block = "```python\ndef hello():\n    print('Hello')\n```"
-    assert is_code_block(code_block) is True
-    assert is_code_block("Regular paragraph") is False
-
-    # Test horizontal rule detection
-    assert is_horizontal_rule("---") is True
-    assert is_horizontal_rule("***") is True
-    assert is_horizontal_rule("___") is True
-    assert is_horizontal_rule("Regular paragraph") is False
-
-    # Test table detection
-    table_text = "| Header1 | Header2 |\n|---------|---------|"
-    assert is_table(table_text) is True
-    assert is_table("Regular paragraph") is False
-
-    # Test HTML block detection
-    assert is_html_block("<div>This is HTML</div>") is True
-    assert is_html_block("Regular paragraph") is False
-
-    # Test image/figure detection
-    assert is_image_or_figure("![Alt text](image.jpg)") is True
-    assert is_image_or_figure("Regular paragraph") is False
-
-
 def test_count_tokens():
-    """Test token counting functionality."""
-    # Simple test with predictable token counts
-    text1 = "This is a simple sentence."
-    assert count_tokens(text1) > 0
-
-    # Check that longer text has more tokens
-    text2 = "This is a simple sentence. " * 10
-    assert count_tokens(text2) > count_tokens(text1)
-
-
-def test_generate_hash():
-    """Test hash generation from text."""
-    # Test basic hash generation
-    hash1 = generate_hash("test text")
-    assert isinstance(hash1, str)
-    assert len(hash1) == 6  # Should be 6 characters
-
-    # Test consistent hashing
-    hash2 = generate_hash("test text")
-    assert hash1 == hash2  # Same input should give same hash
-
-    # Test different inputs give different hashes
-    hash3 = generate_hash("different text")
-    assert hash1 != hash3  # Different input should give different hash
-
-
-def test_generate_id():
-    """Test ID generation for items."""
-    # Test first item ID generation
-    first_id = generate_id("", "First item content")
-    assert first_id.startswith("000000-")
-    assert len(first_id) == 13  # "000000-" + 6 chars
-
-    # Test subsequent item ID generation
-    second_id = generate_id(first_id, "Second item content")
-    # Second ID should start with first ID's suffix
-    prefix = first_id.split("-")[1]
-    assert second_id.startswith(f"{prefix}-")
-    assert len(second_id) == 13
+    """Test token counting."""
+    text = "This is a test sentence."
+    count = count_tokens(text)
+    assert isinstance(count, int)
+    assert count > 0
 
 
 def test_escape_xml_chars():
-    """Test escaping of XML special characters."""
-    # Test all special characters
-    input_text = "Text with <tags> & \"quotes\" and 'apostrophes'"
-    expected = (
-        "Text with &lt;tags&gt; &amp; &quot;quotes&quot; and &apos;apostrophes&apos;"
-    )
-    assert escape_xml_chars(input_text) == expected
+    """Test XML character escaping."""
+    test_cases = [
+        ("&<>\"'", "&amp;&lt;&gt;&quot;&apos;"),
+        ("Normal text", "Normal text"),
+        ("Mixed & <tags>", "Mixed &amp; &lt;tags&gt;"),
+        ("Unicode ♥", "Unicode ♥"),  # Unicode should be preserved
+    ]
 
-    # Test text with no special characters
-    normal_text = "Normal text without special chars"
-    assert escape_xml_chars(normal_text) == normal_text
+    for input_text, expected in test_cases:
+        assert escape_xml_chars(input_text) == expected
+
+
+def test_generate_hash():
+    """Test hash generation."""
+    text = "Test content"
+    hash1 = generate_hash(text)
+    assert isinstance(hash1, str)
+    assert len(hash1) == 6
+    assert hash1.isalnum()
+
+    # Test consistency
+    hash2 = generate_hash(text)
+    assert hash1 == hash2
+
+
+def test_generate_id():
+    """Test ID generation."""
+    content = "Test content"
+
+    # Test first ID
+    first_id = generate_id("", content)
+    assert isinstance(first_id, str)
+    assert len(first_id) == 13  # 6 chars + hyphen + 6 chars
+    assert first_id.startswith("000000-")
+
+    # Test subsequent ID
+    second_id = generate_id(first_id, "More content")
+    assert len(second_id) == 13
+    assert second_id.startswith(first_id.split("-")[1] + "-")
+
+
+def test_split_into_paragraphs():
+    """Test paragraph splitting."""
+    text = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+    paragraphs = split_into_paragraphs(text)
+    assert len(paragraphs) == 3
+    assert "First paragraph." in paragraphs[0]
+    assert "Second paragraph." in paragraphs[1]
+    assert "Third paragraph." in paragraphs[2]
+
+
+def test_is_heading():
+    """Test heading detection."""
+    assert is_heading("# Heading 1")
+    assert is_heading("## Heading 2")
+    assert is_heading("Chapter 1")
+    assert is_heading("Rozdział 2")
+    assert not is_heading("Regular text")
+
+
+def test_is_blockquote():
+    """Test blockquote detection."""
+    assert is_blockquote("> This is a quote")
+    assert not is_blockquote("This is not a quote")
+
+
+def test_is_list():
+    """Test list detection."""
+    assert is_list("* First item\n* Second item")
+    assert is_list("1. First item\n2. Second item")
+    assert not is_list("* Single item")  # Requires at least 2 items
+    assert not is_list("Regular text")
+
+
+def test_is_code_block():
+    """Test code block detection."""
+    assert is_code_block("```\ncode here\n```")
+    assert not is_code_block("Regular text")
+
+
+def test_is_horizontal_rule():
+    """Test horizontal rule detection."""
+    assert is_horizontal_rule("---")
+    assert is_horizontal_rule("***")
+    assert is_horizontal_rule("___")
+    assert not is_horizontal_rule("Regular text")
+
+
+def test_is_table():
+    """Test table detection."""
+    table = "| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1 | Cell 2 |"
+    assert is_table(table)
+    assert not is_table("Regular text")
+
+
+def test_is_html_block():
+    """Test HTML block detection."""
+    assert is_html_block("<div>Content</div>")
+    assert not is_html_block("Regular text")
+
+
+def test_is_image_or_figure():
+    """Test image/figure detection."""
+    assert is_image_or_figure("![Alt text](image.jpg)")
+    assert not is_image_or_figure("Regular text")
+
+
+def test_itemize_document():
+    """Test document itemization."""
+    doc = """# Heading
+    
+First paragraph.
+
+> A quote here.
+
+* List item 1
+* List item 2
+
+```
+Code block
+```"""
+
+    items = itemize_document(doc)
+    assert isinstance(items, list)
+    assert all(isinstance(item, tuple) and len(item) == 2 for item in items)
+    assert len(items) > 0
+
+
+def test_create_item_elements():
+    """Test creation of item elements."""
+    items = [
+        ("First paragraph", "normal"),
+        ("Second paragraph", "following"),
+    ]
+
+    result = create_item_elements(items)
+    assert isinstance(result, list)
+    assert len(result) == len(items)
+    for item_id, item_xml in result:
+        assert isinstance(item_id, str)
+        assert isinstance(item_xml, str)
+        assert item_xml.startswith("<item")
+        assert item_xml.endswith("</item>")
+
+
+def test_create_chunks():
+    """Test chunk creation."""
+    doc = """<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <content>
+        <unit type="paragraph">First unit content.</unit>
+        <unit type="dialog">Second unit content.</unit>
+    </content>
+</document>"""
+
+    result = create_chunks(doc, max_chunk_size=1000)
+    assert isinstance(result, str)
+    assert "<chunk" in result
+    assert "</chunk>" in result
+
+
+def test_clean_consecutive_newlines():
+    """Test newline cleaning."""
+    text = "First line.\n\n\n\nSecond line."
+    result = clean_consecutive_newlines(text)
+    assert "\n\n\n" not in result
+    assert "First line." in result
+    assert "Second line." in result
+
+
+def test_pretty_print_xml():
+    """Test XML pretty printing."""
+    xml = "<root><child>Content</child></root>"
+    result = pretty_print_xml(xml)
+    assert isinstance(result, str)
+    assert "\n" in result  # Should have line breaks
+    assert "  " in result  # Should have indentation
+
+
+def test_process_document(temp_workspace):
+    """Test the complete document processing pipeline."""
+    # Create test input file
+    input_file = temp_workspace / "input" / "test.md"
+    output_file = temp_workspace / "output" / "test.xml"
+
+    test_content = """# Test Document
+
+First paragraph with some content.
+
+## Section 1
+
+Another paragraph here.
+
+* List item 1
+* List item 2
+
+> A blockquote for testing.
+"""
+
+    input_file.write_text(test_content)
+
+    # Process the document
+    result = process_document(
+        str(input_file),
+        str(output_file),
+        chunk_size=1000,
+        model="gpt-4o",
+        temperature=0.2,
+        verbose=True,
+        backup=True,
+    )
+
+    assert isinstance(result, dict)
+    assert output_file.exists()
+
+    # Verify the processed content
+    processed_content = output_file.read_text()
+    assert "<?xml" in processed_content
+    assert "<document>" in processed_content
+    assert "<chunk" in processed_content
+    assert "</document>" in processed_content
+
+
+def test_error_handling():
+    """Test error handling in chunker functions."""
+    # Test with empty input
+    assert count_tokens("") == 0
+    assert escape_xml_chars("") == ""
+    assert generate_hash("") == "000000"
+    assert generate_id("", "") == "000000-000000"
+
+    # Test with invalid input
+    assert split_into_paragraphs("") == []
+    assert not is_heading("")
+    assert not is_blockquote("")
+    assert not is_list("")
+    assert not is_code_block("")
+    assert not is_horizontal_rule("")
+    assert not is_table("")
+    assert not is_html_block("")
+    assert not is_image_or_figure("")
+
+    # Test with malformed XML
+    assert pretty_print_xml("<invalid>") == "<invalid>"

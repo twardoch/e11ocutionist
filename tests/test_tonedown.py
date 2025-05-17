@@ -1,92 +1,179 @@
-"""Test suite for e11ocutionist tonedown module."""
+#!/usr/bin/env python3
+"""Tests for the tonedown module."""
+
+from lxml import etree
 
 from e11ocutionist.tonedown import (
     extract_neis_from_document,
+    detect_language,
     update_nei_tags,
     reduce_emphasis,
+    process_document,
 )
 
 
-def test_extract_neis_from_document():
-    """Test extraction of Named Entities of Interest (NEIs) from a document."""
-    test_xml = (
-        "<doc>\n"
-        "  <item id='i1'>This has <nei>John Smith</nei> as a name.</item>\n"
-        "  <item id='i2'>Another <nei pronunciation='acro-nim'>NEI</nei> here.</item>\n"
-        "  <item id='i3'><nei orig='doctor'>Dr.</nei> is short.</item>\n"
-        "  <item id='i4'>Again <nei>John Smith</nei> here.</item>\n"
-        "  <item id='i5'><nei new='true'>New Entity</nei> marked as new.</item>\n"
-        "</doc>"
-    )
+def test_extract_neis_from_document(sample_xml):
+    """Test NEI extraction from XML document."""
+    # Test with sample XML containing NEIs
+    result = extract_neis_from_document(sample_xml)
+    assert isinstance(result, dict)
+    assert "named entity" in result
+    assert result["named entity"]["text"] == "Named Entity"
+    assert result["named entity"]["count"] == 1
+    assert result["named entity"]["new"] is False
 
-    result = extract_neis_from_document(test_xml)
+    # Test with XML containing multiple instances of same NEI
+    xml_with_duplicates = """<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <content>
+        <p>First <nei type="person">John Smith</nei> mention.</p>
+        <p>Second <nei type="person" new="true">John Smith</nei> 
+        mention.</p>
+        <p>Third <nei type="person" orig="Jon Smyth">John Smith</nei> 
+        mention.</p>
+    </content>
+</document>"""
 
-    assert len(result) == 4
+    result = extract_neis_from_document(xml_with_duplicates)
     assert "john smith" in result
-    assert "nei" in result
-    assert "dr." in result
-    assert "new entity" in result
+    assert result["john smith"]["count"] == 3
+    assert result["john smith"]["new"] is True
+    assert result["john smith"]["orig"] == "Jon Smyth"
 
-    # Check count of repeated entities
-    assert result["john smith"]["count"] == 2
 
-    # Check text preservation
-    assert result["nei"]["text"] == "NEI"
-
-    # Check orig attribute is preserved
-    assert result["dr."]["text"] == "Dr."
-    assert result["dr."]["orig"] == "doctor"
-
-    # Check new attribute
-    assert result["new entity"]["new"] is True
+def test_detect_language(sample_xml):
+    """Test language detection."""
+    # Test with default model and temperature
+    lang, conf = detect_language(sample_xml, "gpt-4o", 0.2)
+    assert isinstance(lang, str)
+    assert isinstance(conf, float)
+    assert lang == "en"  # Default/mock response
+    assert 0 <= conf <= 1
 
 
 def test_update_nei_tags():
-    """Test updating NEI tags in a document with pronunciation information."""
-    test_xml = """
-    <doc>
-        <item id="i1">This has <nei>John Smith</nei>.</item>
-        <item id="i2">Another <nei>NEI</nei> example.</item>
-    </doc>
-    """
+    """Test updating NEI tags in XML."""
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <content>
+        <p><nei type="person">John Smith</nei> is here.</p>
+    </content>
+</document>"""
 
-    # Dictionary with pronunciation information
     nei_dict = {
         "john smith": {
             "text": "John Smith",
-            "pronunciation": "jon smɪθ",
+            "new": True,
+            "orig": "Jon Smyth",
             "count": 1,
-        },
-        "nei": {
-            "text": "NEI",
-            "pronunciation": "en-ee-eye",
-            "count": 1,
-        },
+        }
     }
 
-    result = update_nei_tags(test_xml, nei_dict)
+    result = update_nei_tags(xml_content, nei_dict)
+    assert isinstance(result, str)
 
-    # Check that the pronunciation was added and the original text was moved to the orig attribute
-    assert '<nei orig="John Smith">jon smɪθ</nei>' in result
-    assert '<nei orig="NEI">en-ee-eye</nei>' in result
+    # Parse and verify the updated XML
+    root = etree.fromstring(result.encode())
+    nei = root.find(".//nei")
+    assert nei is not None
+    assert nei.get("new") == "true"
+    assert nei.get("orig") == "Jon Smyth"
 
 
 def test_reduce_emphasis():
-    """Test reduction of excessive emphasis markers in text."""
-    test_xml = """
-    <doc>
-        <item id="i1">This is <em>important</em> text.</item>
-        <item id="i2">Another <em>key point</em> here.</item>
-        <item id="i3">One more <em>critical</em> note.</item>
-    </doc>
-    """
+    """Test emphasis reduction in XML."""
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <content>
+        <p>This is <em>very</em> important and this is also <em>very</em> 
+        important.</p>
+    </content>
+</document>"""
 
-    # Test with a minimum distance that should potentially remove emphasis tags
-    # Note: Since the function looks for <em> tags not <emphasis>, and our implementation
-    # in reduce_emphasis doesn't have precise token counting in tests, we'll verify
-    # the function runs without errors and returns XML
-    result = reduce_emphasis(test_xml, min_distance=30)
+    # Test with default minimum distance
+    result = reduce_emphasis(xml_content)
+    assert isinstance(result, str)
 
-    # Verify XML was returned
-    assert "<doc>" in result
-    assert "</doc>" in result
+    # Parse and count remaining emphasis tags
+    root = etree.fromstring(result.encode())
+    em_tags = root.findall(".//em")
+    assert len(em_tags) < 2  # At least one emphasis should be removed
+
+    # Test with large minimum distance (should preserve all emphasis)
+    result = reduce_emphasis(xml_content, min_distance=1000)
+    root = etree.fromstring(result.encode())
+    em_tags = root.findall(".//em")
+    assert len(em_tags) == 2
+
+
+def test_process_document(temp_workspace):
+    """Test the complete document processing pipeline."""
+    # Create test input file
+    input_file = temp_workspace / "input" / "test.xml"
+    output_file = temp_workspace / "output" / "test.xml"
+
+    test_content = """<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <content>
+        <p><nei type="person">John Smith</nei> said this is <em>very</em> 
+        important.</p>
+        <p>And this is also <em>very</em> important, said 
+        <nei type="person">John Smith</nei>.</p>
+    </content>
+</document>"""
+
+    input_file.write_text(test_content)
+
+    # Process the document
+    result = process_document(
+        str(input_file),
+        str(output_file),
+        model="gpt-4o",
+        temperature=0.2,
+        min_em_distance=5,
+        backup=True,
+        verbose=True,
+    )
+
+    assert isinstance(result, str)
+    assert output_file.exists()
+
+    # Verify the processed content
+    processed_content = output_file.read_text()
+    root = etree.fromstring(processed_content.encode())
+
+    # Check NEI processing
+    neis = root.findall(".//nei")
+    assert len(neis) == 2
+
+    # Check emphasis reduction
+    em_tags = root.findall(".//em")
+    assert len(em_tags) < 2  # At least one emphasis should be removed
+
+
+def test_error_handling():
+    """Test error handling in tonedown functions."""
+    # Test with invalid XML
+    invalid_xml = "This is not XML"
+    result = extract_neis_from_document(invalid_xml)
+    assert isinstance(result, dict)
+    assert len(result) == 0
+
+    # Test language detection with invalid XML
+    lang, conf = detect_language(invalid_xml, "gpt-4o", 0.2)
+    assert lang == "en"  # Should return default
+    assert conf == 0.5  # Should return default confidence
+
+    # Test with empty XML
+    empty_xml = """<?xml version="1.0" encoding="UTF-8"?><document></document>"""
+    result = extract_neis_from_document(empty_xml)
+    assert isinstance(result, dict)
+    assert len(result) == 0
+
+    # Test update_nei_tags with invalid XML
+    result = update_nei_tags(invalid_xml, {})
+    assert result == invalid_xml  # Should return input unchanged
+
+    # Test reduce_emphasis with invalid XML
+    result = reduce_emphasis(invalid_xml)
+    assert result == invalid_xml  # Should return input unchanged
