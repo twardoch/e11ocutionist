@@ -309,9 +309,15 @@ def test_say_command_missing_input():
         say(output_dir="output")
 
 
-def test_say_command_missing_api_key(sample_output_dir):
+@patch("e11ocutionist.elevenlabs_synthesizer.get_personal_voices")
+def test_say_command_missing_api_key(
+    mock_get_voices: MagicMock,
+    sample_output_dir: str,
+) -> None:
     """Test say command with no API key provided."""
-    with pytest.raises(ValueError, match="ElevenLabs API key not provided"):
+    error_msg = "ElevenLabs API key not provided"
+    mock_get_voices.side_effect = ValueError(error_msg)
+    with pytest.raises(ValueError, match=error_msg):
         say(text="Hello", output_dir=sample_output_dir, api_key=None)
 
 
