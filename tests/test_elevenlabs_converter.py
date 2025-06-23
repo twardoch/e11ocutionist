@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the elevenlabs_converter module."""
 
-from pathlib import Path
 
 import pytest
 from lxml import etree
@@ -33,7 +32,7 @@ def test_extract_text_from_xml_with_formatting():
         <content>
             <chunk>
                 <item>
-                    This is <em>emphasized</em> text with a 
+                    This is <em>emphasized</em> text with a
                     <nei>Named Entity</nei> and a
                     <nei new="true">New Entity</nei>.
                     Here's a break: <hr/> and some more text.

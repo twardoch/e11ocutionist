@@ -339,18 +339,23 @@ def create_chunks(doc_with_units: str, max_chunk_size: int) -> str:
             return doc_with_units
 
         # Remove units from their current position
-        for unit in units:
-            unit.getparent().remove(unit)
+        for unit_element in units: # Renamed to avoid conflict if 'unit' is a type
+            parent = unit_element.getparent()
+            if parent is not None:
+                parent.remove(unit_element)
+            else:
+                logger.warning(f"Unit element {unit_element.get('id', 'unknown')} has no parent, cannot remove.")
 
         # Create initial chunk
         chunk_id = 1
-        chunk = etree.SubElement(root, "chunk")
+        # Explicitly type 'chunk' as etree._Element
+        chunk: etree._Element = etree.SubElement(root, "chunk")
         chunk.set("id", f"{chunk_id:04d}")
         chunk.set("tok", "____")
         current_chunk_tokens = 0
 
         # Process each unit
-        for unit in units:
+        for _ in units:
             # Count tokens in the unit
             unit_xml = etree.tostring(unit, encoding="utf-8").decode("utf-8")
             unit_tokens = count_tokens(unit_xml)
@@ -1003,9 +1008,14 @@ def add_unit_tags(itemized_doc: str, semantic_boundaries: list[tuple[str, str]])
                     unit.set("tok", "____")  # Will be replaced later
 
                     # Move items into the unit
-                    parent = current_items[0].getparent()
-                    unit_index = parent.index(current_items[0])
-                    parent.insert(unit_index, unit)
+                    parent_of_first_item = current_items[0].getparent()
+                    if parent_of_first_item is not None:
+                        unit_index = parent_of_first_item.index(current_items[0])
+                        parent_of_first_item.insert(unit_index, unit)
+                    else:
+                        # This case is unlikely if items come from a parsed root
+                        logger.warning("First item in a potential unit has no parent. Appending unit to root.")
+                        root.append(unit) # Fallback: append to root
 
                     for item_elem in current_items:
                         unit.append(item_elem)
@@ -1028,9 +1038,14 @@ def add_unit_tags(itemized_doc: str, semantic_boundaries: list[tuple[str, str]])
             unit.set("type", current_type)
             unit.set("tok", "____")
 
-            parent = current_items[0].getparent()
-            unit_index = parent.index(current_items[0])
-            parent.insert(unit_index, unit)
+            parent_of_first_item = current_items[0].getparent()
+            if parent_of_first_item is not None:
+                unit_index = parent_of_first_item.index(current_items[0])
+                parent_of_first_item.insert(unit_index, unit)
+            else:
+                logger.warning("Last item in a potential unit has no parent. Appending unit to root.")
+                root.append(unit) # Fallback: append to root
+
 
             for item_elem in current_items:
                 unit.append(item_elem)

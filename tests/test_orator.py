@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the orator module."""
 
-from pathlib import Path
 
 from lxml import etree
 
@@ -123,7 +122,7 @@ def test_merge_processed_items():
     assert len(items) == len(processed_items)
 
     # Check that content was updated
-    for item, (_, content) in zip(items, processed_items):
+    for item, (_, content) in zip(items, processed_items, strict=False):
         assert item.text == content
 
 

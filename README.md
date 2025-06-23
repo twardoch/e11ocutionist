@@ -102,6 +102,12 @@ hatch run lint
 
 # Format code
 hatch run format
+
+# Apply auto-fixes (Ruff)
+hatch run fix
+
+# Run type checking (Mypy)
+hatch run typecheck
 ```
 
 ## Requirements

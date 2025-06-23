@@ -2,7 +2,6 @@
 """Common test fixtures for e11ocutionist tests."""
 
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from loguru import logger
@@ -39,11 +38,11 @@ def sample_xml() -> str:
     <content>
         <paragraph>This is a test paragraph with some text.</paragraph>
         <dialog speaker="John">
-            "Hello," said John, looking at the 
+            "Hello," said John, looking at the
             <nei type="person">Named Entity</nei>.
         </dialog>
         <paragraph>
-            Another paragraph with 
+            Another paragraph with
             <nei type="person" new="true">New Entity</nei>.
         </paragraph>
     </content>
