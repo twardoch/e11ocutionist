@@ -27,9 +27,9 @@ def test_extract_neis_from_document(sample_xml):
 <document>
     <content>
         <p>First <nei type="person">John Smith</nei> mention.</p>
-        <p>Second <nei type="person" new="true">John Smith</nei> 
+        <p>Second <nei type="person" new="true">John Smith</nei>
         mention.</p>
-        <p>Third <nei type="person" orig="Jon Smyth">John Smith</nei> 
+        <p>Third <nei type="person" orig="Jon Smyth">John Smith</nei>
         mention.</p>
     </content>
 </document>"""
@@ -85,7 +85,7 @@ def test_reduce_emphasis():
     xml_content = """<?xml version="1.0" encoding="UTF-8"?>
 <document>
     <content>
-        <p>This is <em>very</em> important and this is also <em>very</em> 
+        <p>This is <em>very</em> important and this is also <em>very</em>
         important.</p>
     </content>
 </document>"""
@@ -115,9 +115,9 @@ def test_process_document(temp_workspace):
     test_content = """<?xml version="1.0" encoding="UTF-8"?>
 <document>
     <content>
-        <p><nei type="person">John Smith</nei> said this is <em>very</em> 
+        <p><nei type="person">John Smith</nei> said this is <em>very</em>
         important.</p>
-        <p>And this is also <em>very</em> important, said 
+        <p>And this is also <em>very</em> important, said
         <nei type="person">John Smith</nei>.</p>
     </content>
 </document>"""

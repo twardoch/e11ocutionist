@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the entitizer module."""
 
-from pathlib import Path
-from copy import deepcopy
 
 import pytest
 from lxml import etree
@@ -171,7 +169,7 @@ def test_extract_nei_from_tags():
     """Test extraction of NEIs from tagged text."""
     tagged_text = """
     <item>
-        <nei type="person">John Smith</nei> visited 
+        <nei type="person">John Smith</nei> visited
         <nei type="location">New York</nei>.
     </item>
     """

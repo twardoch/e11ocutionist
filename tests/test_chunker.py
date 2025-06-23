@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the chunker module."""
 
-from pathlib import Path
 
 from e11ocutionist.chunker import (
     count_tokens,
@@ -145,7 +144,7 @@ def test_is_image_or_figure():
 def test_itemize_document():
     """Test document itemization."""
     doc = """# Heading
-    
+
 First paragraph.
 
 > A quote here.

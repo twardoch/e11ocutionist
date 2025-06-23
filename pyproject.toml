@@ -39,6 +39,11 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pyupgrade>=3.19.0",
+    # Stubs for mypy
+    "lxml-stubs",
+    # types-loguru is not a common package, loguru aims to be PEP 561 compatible
+    # For tiktoken, backoff, tenacity, elevenlabs, litellm, dotenv stubs might not exist
+    # or might need to be handled via mypy config or inline ignores if they cause issues.
 ]
 
 test = [
@@ -124,6 +129,11 @@ packages = ["src/e11ocutionist"]
 
 [tool.hatch.envs.default]
 dependencies = [
+  "mypy>=1.0.0",
+  "lxml-stubs",
+  # Add other missing stubs here if necessary after next mypy run
+  # For packages without stubs, we might need to configure mypy to ignore them:
+  # loguru, backoff, tenacity, elevenlabs, tiktoken, litellm, dotenv (if types-python-dotenv isn't enough for 'dotenv')
 ]
 
 [[tool.hatch.envs.all.matrix]]
@@ -133,23 +143,27 @@ python = ["3.10", "3.11", "3.12"]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=src/e11ocutionist --cov=tests {args:tests}"
-type-check = "mypy src/e11ocutionist tests"
-lint = ["ruff check src/e11ocutionist tests", "ruff format --respect-gitignore src/e11ocutionist tests"]
-fix = ["ruff check  --fix --unsafe-fixes src/e11ocutionist tests", "ruff format --respect-gitignore src/e11ocutionist tests"]
-
+typecheck = "mypy src/e11ocutionist tests"
+lint = "ruff check src/e11ocutionist tests"
+format = "ruff format --respect-gitignore src/e11ocutionist tests"
+fix = "ruff check --fix --unsafe-fixes src/e11ocutionist tests && ruff format --respect-gitignore src/e11ocutionist tests"
 
 
 [tool.hatch.envs.lint]
 detached = true
 dependencies = [
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
 ]
 
 
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/e11ocutionist tests}"
-style = ["ruff check {args:.}", "ruff format --respect-gitignore {args:.}"]
-fmt = ["ruff format --respect-gitignore {args:.}", "ruff check --fix {args:.}"]
-all = ["style", "typing"]
+"lint:check" = "ruff check {args:src/e11ocutionist tests .}"
+"lint:fmt" = "ruff format --check --respect-gitignore {args:src/e11ocutionist tests .}"
+"format:apply" = "ruff format --respect-gitignore {args:src/e11ocutionist tests .}"
+"fix:apply" = "ruff check --fix --unsafe-fixes {args:src/e11ocutionist tests .} && ruff format --respect-gitignore {args:src/e11ocutionist tests .}"
+"all:check" = ["lint:check", "lint:fmt", "typing"] # The values here refer to other script keys
 
 
 [tool.hatch.envs.test]
@@ -183,6 +197,21 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pytest",
+    "loguru",
+    "backoff",
+    "tenacity",
+    "elevenlabs",
+    "elevenlabs.*", # To cover submodules like elevenlabs.api
+    "tiktoken",
+    "dotenv",
+    "litellm",
+    "fire",
+]
+ignore_missing_imports = true
 
 
 [tool.ruff]

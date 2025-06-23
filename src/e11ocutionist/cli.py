@@ -433,3 +433,23 @@ def process(  # noqa: PLR0913
     if isinstance(result, dict) and "final_output_file" in result:
         return str(cast(dict[str, str], result)["final_output_file"])
     return str(config.output_dir)
+
+
+# --- Main CLI entrypoint using python-fire ---
+import fire
+
+
+def main() -> None:
+    """Expose CLI functions via Fire."""
+    fire.Fire(
+        {
+            "chunk": chunk,
+            "entitize": entitize,
+            "orate": orate,
+            "tonedown": tone_down,
+            "convert-11labs": convert_11labs,
+            "say": say,
+            "fix-nei": fix_nei,
+            "process": process,
+        }
+    )
