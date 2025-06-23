@@ -355,7 +355,7 @@ def create_chunks(doc_with_units: str, max_chunk_size: int) -> str:
         current_chunk_tokens = 0
 
         # Process each unit
-        for unit_element in units: # Renamed to avoid conflict if 'unit' is a type
+        for _ in units:
             # Count tokens in the unit
             unit_xml = etree.tostring(unit, encoding="utf-8").decode("utf-8")
             unit_tokens = count_tokens(unit_xml)
