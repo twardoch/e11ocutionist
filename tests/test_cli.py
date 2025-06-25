@@ -11,7 +11,6 @@ from e11ocutionist.cli import (
     chunk,
     convert_11labs,
     entitize,
-    fix_nei,
     orate,
     process,
     say,
@@ -280,24 +279,6 @@ def test_say_command_with_file(
     assert result == sample_output_dir
 
 
-@patch("e11ocutionist.neifix.transform_nei_content")
-def test_neifix_command(mock_fix_nei, sample_input_file, sample_output_file):
-    """Test neifix command execution."""
-    # Call neifix function
-    result = fix_nei(
-        sample_input_file,
-        sample_output_file,
-        verbose=True,
-    )
-
-    # Verify fix_nei_content was called with correct arguments
-    mock_fix_nei.assert_called_once_with(
-        input_file=sample_input_file,
-        output_file=sample_output_file,
-    )
-    assert result == sample_output_file
-
-
 # New test cases for error handling and logging
 
 
@@ -484,19 +465,6 @@ def test_say_command_with_both_inputs(
             input_file=sample_input_file,
             output_dir="output",
         )
-
-
-@patch("e11ocutionist.neifix.transform_nei_content")
-def test_neifix_command_same_input_output(
-    mock_fix_nei,
-    sample_input_file,
-):
-    """Test neifix command with same input and output file."""
-    with pytest.raises(
-        ValueError,
-        match="Input and output files must be different",
-    ):
-        fix_nei(sample_input_file, sample_input_file)
 
 
 @patch("e11ocutionist.cli.E11ocutionistPipeline")

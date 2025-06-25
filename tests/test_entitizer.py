@@ -176,10 +176,12 @@ def test_extract_nei_from_tags():
 
     result = extract_nei_from_tags(tagged_text)
     assert isinstance(result, dict)
-    assert "John Smith" in result
-    assert "New York" in result
-    assert result["John Smith"]["type"] == "person"
-    assert result["New York"]["type"] == "location"
+    assert "john smith" in result
+    assert "new york" in result
+    assert result["john smith"]["text"] == "John Smith"  # Check original text
+    assert result["john smith"]["type"] == "person"    # Check type attribute
+    assert result["new york"]["text"] == "New York"    # Check original text
+    assert result["new york"]["type"] == "location"  # Check type attribute
 
 
 def test_process_chunks():

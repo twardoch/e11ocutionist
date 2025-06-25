@@ -136,6 +136,10 @@ dependencies = [
   # loguru, backoff, tenacity, elevenlabs, tiktoken, litellm, dotenv (if types-python-dotenv isn't enough for 'dotenv')
 ]
 
+# Ensure the environment installs the project itself along with its "test" extras
+features = ["test"]
+
+
 [[tool.hatch.envs.all.matrix]]
 python = ["3.10", "3.11", "3.12"]
 

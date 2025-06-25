@@ -235,6 +235,10 @@ def enhance_punctuation(items: list[tuple[str, str]]) -> list[tuple[str, str]]:
         # Clean up excessive commas
         processed = re.sub(r",\s*,", r",", processed)
 
+        # Add logic to ensure it ends with punctuation
+        if processed.strip() and not processed.strip().endswith((".", "!", "?")):
+            processed = processed.rstrip() + "."
+
         enhanced_items.append((item_id, processed))
 
     return enhanced_items
