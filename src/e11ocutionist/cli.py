@@ -14,7 +14,6 @@ from e11ocutionist import (
     elevenlabs_converter as converter,
     elevenlabs_synthesizer as synthesizer,
     entitizer,
-    neifix,
     orator,
     tonedown,
 )
@@ -323,35 +322,6 @@ def say(
         raise ValueError(msg) from e
 
 
-def fix_nei(
-    input_file: str,
-    output_file: str,
-    verbose: bool = False,
-    debug: bool = False,
-) -> str:
-    """Fix named entity issues in text."""
-    _configure_logging(debug, verbose)
-
-    if input_file == output_file:
-        msg = "Input and output files must be different"
-        raise ValueError(msg)
-
-    logger.info("Running NEI fixing step:")
-    logger.info(f"Input: {input_file}")
-    logger.info(f"Output: {output_file}")
-
-    try:
-        neifix.transform_nei_content(
-            input_file=input_file,
-            output_file=output_file,
-        )
-        logger.info(f"NEI fixing completed: {output_file}")
-        return output_file
-    except Exception as e:
-        logger.error(f"Error: {e!s}")
-        raise
-
-
 def process(  # noqa: PLR0913
     input_file: str,
     output_dir: str | None = None,
@@ -449,7 +419,6 @@ def main() -> None:
             "tonedown": tone_down,
             "convert-11labs": convert_11labs,
             "say": say,
-            "fix-nei": fix_nei,
             "process": process,
         }
     )

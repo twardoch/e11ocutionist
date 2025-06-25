@@ -327,44 +327,50 @@ def extract_nei_from_tags(text: str) -> dict[str, dict[str, Any]]:
 
     for match in re.finditer(pattern, text, re.DOTALL):
         attributes_str = match.group(1) or ""
-        content = match.group(2)
+        content = match.group(2).strip() # Ensure content is stripped
 
         # Skip empty content
-        if not content or not content.strip():
+        if not content:
             continue
 
-        # Extract attributes
-        attributes = {}
-        for attr_match in re.finditer(r'(\w+)="([^"]*)"', attributes_str):
-            attributes[attr_match.group(1)] = attr_match.group(2)
-
-        # Use the lowercased content as the key
         key = content.lower()
 
-        # If this NEI doesn't exist yet, add it
+        # Extract all attributes from the tag
+        current_attributes = {}
+        for attr_match in re.finditer(r'(\w+)="([^"]*)"', attributes_str):
+            current_attributes[attr_match.group(1)] = attr_match.group(2)
+
         if key not in nei_dict:
             nei_dict[key] = {
-                "text": content,
+                "text": content, # Store original cased content
                 "count": 1,
-                "new": True,
-                "orig": attributes.get("orig", ""),
+                **current_attributes # Add all found attributes
             }
+            # Explicitly set 'new' based on its presence in attributes,
+            # rather than defaulting to True then False.
+            # If 'new' attribute is literally "true", it's new. Otherwise, if attr not present, it's new.
+            if "new" not in current_attributes:
+                 nei_dict[key]["new"] = True
+            elif current_attributes.get("new") != "true": # handles new="false" or other values
+                 nei_dict[key]["new"] = False
 
-            # Add pronunciation if it exists
-            if "pronunciation" in attributes:
-                nei_dict[key]["pronunciation"] = attributes["pronunciation"]
         else:
-            # Update existing NEI
             nei_dict[key]["count"] += 1
-            nei_dict[key]["new"] = False
+            # Update attributes if not already present or if they differ,
+            # preferring existing ones unless a specific logic is needed.
+            for attr_name, attr_value in current_attributes.items():
+                if attr_name not in nei_dict[key]: # Add new attributes from this occurrence
+                    nei_dict[key][attr_name] = attr_value
 
-            # Keep orig if it doesn't exist yet
-            if not nei_dict[key].get("orig") and "orig" in attributes:
-                nei_dict[key]["orig"] = attributes["orig"]
+            # If it's seen again, it's not "new" overall for the dictionary,
+            # unless this specific occurrence is marked new="true" AND we want to override.
+            # Current logic: if an entity is re-encountered, its 'new' status in the dict becomes False.
+            # unless this specific tag had new="true"
+            if current_attributes.get("new") == "true":
+                nei_dict[key]["new"] = True # This specific instance was marked new
+            else:
+                nei_dict[key]["new"] = False
 
-            # Keep pronunciation if it doesn't exist yet
-            if not nei_dict[key].get("pronunciation") and "pronunciation" in attributes:
-                nei_dict[key]["pronunciation"] = attributes["pronunciation"]
 
     return nei_dict
 
