@@ -18,7 +18,11 @@ from loguru import logger
 
 @cache
 def get_token_encoder():
-    """Get the token encoder for a specific model."""
+    """Get the token encoder for a specific model.
+
+    Used in:
+    - e11ocutionist/utils.py
+    """
     return tiktoken.encoding_for_model("gpt-4o")
 
 
@@ -31,6 +35,10 @@ def count_tokens(text: str) -> int:
 
     Returns:
         Integer token count
+
+    Used in:
+    - e11ocutionist/tonedown.py
+    - e11ocutionist/utils.py
     """
     encoder = get_token_encoder()
     return len(encoder.encode(text))
@@ -47,6 +55,9 @@ def escape_xml_chars(text: str) -> str:
 
     Returns:
         Text with XML special characters escaped
+
+    Used in:
+    - e11ocutionist/utils.py
     """
     # Replace ampersands first (otherwise you'd double-escape the other entities)
     text = text.replace("&", "&amp;")
@@ -67,6 +78,10 @@ def unescape_xml_chars(text: str) -> str:
 
     Returns:
         Text with XML character entities unescaped
+
+    Used in:
+    - e11ocutionist/elevenlabs_converter.py
+    - e11ocutionist/utils.py
     """
     # Order is important - must unescape ampersands last to avoid double-unescaping
     text = text.replace("&lt;", "<")
@@ -86,6 +101,9 @@ def generate_hash(text: str) -> str:
 
     Returns:
         6-character base36 hash
+
+    Used in:
+    - e11ocutionist/utils.py
     """
     sha1 = hashlib.sha1(text.encode("utf-8")).hexdigest()
     # Convert to base36 (alphanumeric lowercase)
@@ -111,6 +129,10 @@ def create_backup(file_path: str | Path, stage: str = "") -> Path | None:
 
     Returns:
         Path to the backup file, or None if backup failed
+
+    Used in:
+    - e11ocutionist/entitizer.py
+    - e11ocutionist/utils.py
     """
     file_path = Path(file_path)
     if not file_path.exists():
@@ -148,6 +170,13 @@ def parse_xml(xml_content: str | bytes, recover: bool = True) -> etree._Element 
 
     Returns:
         XML root element, or None if parsing failed
+
+    Used in:
+    - e11ocutionist/elevenlabs_converter.py
+    - e11ocutionist/entitizer.py
+    - e11ocutionist/orator.py
+    - e11ocutionist/tonedown.py
+    - e11ocutionist/utils.py
     """
     try:
         # Convert to bytes if string
@@ -176,6 +205,12 @@ def serialize_xml(root: etree._Element, pretty_print: bool = True) -> str:
 
     Returns:
         XML string
+
+    Used in:
+    - e11ocutionist/entitizer.py
+    - e11ocutionist/orator.py
+    - e11ocutionist/tonedown.py
+    - e11ocutionist/utils.py
     """
     try:
         result = etree.tostring(
@@ -193,7 +228,11 @@ def serialize_xml(root: etree._Element, pretty_print: bool = True) -> str:
 
 
 def pretty_print_xml(xml_str: str) -> str:
-    """Format XML string with proper indentation for readability."""
+    """Format XML string with proper indentation for readability.
+
+    Used in:
+    - e11ocutionist/utils.py
+    """
     try:
         root = parse_xml(xml_str)
         if root is not None:
@@ -205,5 +244,10 @@ def pretty_print_xml(xml_str: str) -> str:
 
 
 def clean_consecutive_newlines(content: str) -> str:
-    """Replace more than two consecutive newlines with exactly two."""
+    """Replace more than two consecutive newlines with exactly two.
+
+    Used in:
+    - e11ocutionist/elevenlabs_converter.py
+    - e11ocutionist/utils.py
+    """
     return re.sub(r"\n{3,}", "\n\n", content)

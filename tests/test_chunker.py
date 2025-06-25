@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the chunker module."""
 
-
 from e11ocutionist.chunker import (
     count_tokens,
     escape_xml_chars,

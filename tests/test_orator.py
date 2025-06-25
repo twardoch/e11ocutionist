@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the orator module."""
 
-
 from lxml import etree
 
 from e11ocutionist.orator import (

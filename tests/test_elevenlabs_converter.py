@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the elevenlabs_converter module."""
 
-
 import pytest
 from lxml import etree
 
@@ -36,7 +35,22 @@ def test_extract_text_from_xml(sample_xml_for_converter):
 
 def test_extract_text_from_xml_with_formatting(sample_xml_for_converter): # Use fixture
     """Test extraction of text with various formatting elements."""
-    root = etree.fromstring(sample_xml_for_converter.encode())
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <document>
+        <content>
+            <chunk>
+                <item>
+                    This is <em>emphasized</em> text with a
+                    <nei>Named Entity</nei> and a
+                    <nei new="true">New Entity</nei>.
+                    Here's a break: <hr/> and some more text.
+                </item>
+            </chunk>
+        </content>
+    </document>
+    """
+
+    root = etree.fromstring(xml.encode())
     result = extract_text_from_xml(root)
 
     expected_full_result = (

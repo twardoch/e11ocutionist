@@ -5,6 +5,9 @@ ElevenLabs synthesizer for e11ocutionist.
 
 This module provides functionality to synthesize text using
 personal ElevenLabs voices and save the result as audio files.
+
+Used in:
+- e11ocutionist/elevenlabs_synthesizer.py
 """
 
 import os
@@ -24,29 +27,56 @@ except ImportError:
 
     # Define placeholders to prevent errors
     class ElevenLabsVoice:
-        """Placeholder for ElevenLabs Voice class."""
+        """Placeholder for ElevenLabs Voice class.
+
+        Used in:
+        - e11ocutionist/elevenlabs_synthesizer.py
+        """
 
         def __init__(self) -> None:
+            """Used in:
+            - e11ocutionist/elevenlabs_synthesizer.py
+            """
             self.name: str = ""
             self.voice_id: str = ""
             self.category: list[str] = []
 
     class VoiceSettings:
-        """Placeholder for ElevenLabs VoiceSettings class."""
+        """Placeholder for ElevenLabs VoiceSettings class.
+
+        Used in:
+        - e11ocutionist/elevenlabs_synthesizer.py
+        """
 
     class Voices:
-        """Placeholder for ElevenLabs Voices class."""
+        """Placeholder for ElevenLabs Voices class.
+
+        Used in:
+        - e11ocutionist/elevenlabs_synthesizer.py
+        """
 
     def generate(*args: Any, **kwargs: Any) -> bytes:
-        """Placeholder for ElevenLabs generate function."""
+        """Placeholder for ElevenLabs generate function.
+
+        Used in:
+        - e11ocutionist/elevenlabs_synthesizer.py
+        """
         msg = "ElevenLabs API not available"
         raise ImportError(msg)
 
     def set_api_key(*args: Any, **kwargs: Any) -> None:
-        """Placeholder for ElevenLabs set_api_key function."""
+        """Placeholder for ElevenLabs set_api_key function.
+
+        Used in:
+        - e11ocutionist/elevenlabs_synthesizer.py
+        """
 
     def voices(*args: Any, **kwargs: Any) -> list[ElevenLabsVoice]:
-        """Placeholder for ElevenLabs voices function."""
+        """Placeholder for ElevenLabs voices function.
+
+        Used in:
+        - e11ocutionist/elevenlabs_synthesizer.py
+        """
         return []
 
 
@@ -63,6 +93,9 @@ def sanitize_filename(name: str) -> str:
 
     Returns:
         Sanitized filename
+
+    Used in:
+    - e11ocutionist/elevenlabs_synthesizer.py
     """
     # Remove characters that are invalid in filenames
     s = re.sub(r'[\\/*?:"<>|]', "", name)
@@ -90,6 +123,9 @@ def get_personal_voices(api_key: str | None) -> list[Voice]:
 
     Raises:
         ValueError: If API key is not provided
+
+    Used in:
+    - e11ocutionist/elevenlabs_synthesizer.py
     """
     if not api_key:
         msg = "ElevenLabs API key not provided"
@@ -136,6 +172,9 @@ def synthesize_with_voice(
 
     Returns:
         Path to the saved audio file
+
+    Used in:
+    - e11ocutionist/elevenlabs_synthesizer.py
     """
     # Get API key from environment
     api_key = os.environ.get("ELEVENLABS_API_KEY")
@@ -185,7 +224,13 @@ def synthesize_with_all_voices(
     output_format: str = "mp3_44100_128",
     verbose: bool = False,
 ) -> str:
-    """Synthesize text with all available voices."""
+    """Synthesize text with all available voices.
+
+    Used in:
+    - e11ocutionist/__init__.py
+    - e11ocutionist/cli.py
+    - e11ocutionist/elevenlabs_synthesizer.py
+    """
     if not api_key and not os.environ.get("ELEVENLABS_API_KEY"):
         msg = "ElevenLabs API key not provided"
         raise ValueError(msg)

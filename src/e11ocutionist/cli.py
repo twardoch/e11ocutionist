@@ -27,7 +27,11 @@ VALID_MODELS = ["gpt-4", "gpt-3.5-turbo"]
 
 
 def _configure_logging(debug: bool = False, verbose: bool = False) -> None:
-    """Configure logging based on debug and verbose flags."""
+    """Configure logging based on debug and verbose flags.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     logger.remove()  # Remove default handler
 
     log_format = (
@@ -45,28 +49,44 @@ def _configure_logging(debug: bool = False, verbose: bool = False) -> None:
 
 
 def _validate_temperature(temperature: float) -> None:
-    """Validate temperature value."""
+    """Validate temperature value.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     if not 0 <= temperature <= 1:
         msg = "Temperature must be between 0 and 1"
         raise ValueError(msg)
 
 
 def _validate_model(model: str) -> None:
-    """Validate model name."""
+    """Validate model name.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     if model not in VALID_MODELS:
         msg = f"Invalid model name. Must be one of: {', '.join(VALID_MODELS)}"
         raise ValueError(msg)
 
 
 def _validate_min_distance(min_distance: int) -> None:
-    """Validate minimum emphasis distance."""
+    """Validate minimum emphasis distance.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     if min_distance <= 0:
         msg = "Minimum emphasis distance must be positive"
         raise ValueError(msg)
 
 
 def _validate_output_dir(output_dir: str | Path) -> None:
-    """Validate output directory."""
+    """Validate output directory.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     output_dir = Path(output_dir)
     if output_dir.exists() and not output_dir.is_dir():
         msg = f"{output_dir} exists and is not a directory"
@@ -83,7 +103,11 @@ def chunk(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the chunking step."""
+    """Run the chunking step.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
@@ -116,7 +140,11 @@ def entitize(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the entitizing step."""
+    """Run the entitizing step.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
@@ -155,7 +183,11 @@ def orate(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the orate step."""
+    """Run the orate step.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
@@ -209,7 +241,11 @@ def tone_down(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the tone down step."""
+    """Run the tone down step.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
     _validate_model(model)
     _validate_temperature(temperature)
@@ -243,7 +279,11 @@ def convert_11labs(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Convert text to ElevenLabs format."""
+    """Convert text to ElevenLabs format.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
 
     if dialog and plaintext:
@@ -279,7 +319,11 @@ def say(
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the say step."""
+    """Run the say step.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
 
     # Validate input
@@ -322,6 +366,39 @@ def say(
         raise ValueError(msg) from e
 
 
+def fix_nei(
+    input_file: str,
+    output_file: str,
+    verbose: bool = False,
+    debug: bool = False,
+) -> str:
+    """Fix named entity issues in text.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
+    _configure_logging(debug, verbose)
+
+    if input_file == output_file:
+        msg = "Input and output files must be different"
+        raise ValueError(msg)
+
+    logger.info("Running NEI fixing step:")
+    logger.info(f"Input: {input_file}")
+    logger.info(f"Output: {output_file}")
+
+    try:
+        neifix.transform_nei_content(
+            input_file=input_file,
+            output_file=output_file,
+        )
+        logger.info(f"NEI fixing completed: {output_file}")
+        return output_file
+    except Exception as e:
+        logger.error(f"Error: {e!s}")
+        raise
+
+
 def process(  # noqa: PLR0913
     input_file: str,
     output_dir: str | None = None,
@@ -347,7 +424,11 @@ def process(  # noqa: PLR0913
     verbose: bool = False,
     debug: bool = False,
 ) -> str:
-    """Run the complete e11ocutionist pipeline."""
+    """Run the complete e11ocutionist pipeline.
+
+    Used in:
+    - e11ocutionist/cli.py
+    """
     _configure_logging(debug, verbose)
 
     # Validate input file exists

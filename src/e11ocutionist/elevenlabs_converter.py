@@ -25,6 +25,9 @@ def extract_text_from_xml(xml_root: etree._Element) -> str:
 
     Returns:
         Extracted and processed text
+
+    Used in:
+    - e11ocutionist/elevenlabs_converter.py
     """
     result = []
 
@@ -72,6 +75,9 @@ def process_dialog(text: str) -> str:
 
     Returns:
         Text with processed dialog
+
+    Used in:
+    - e11ocutionist/elevenlabs_converter.py
     """
     # Adapted from legacy malmo_11labs.py
     lines = text.split("\n")

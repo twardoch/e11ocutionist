@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the entitizer module."""
 
-
 import pytest
 from lxml import etree
 

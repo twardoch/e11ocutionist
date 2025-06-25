@@ -38,6 +38,9 @@ def get_chunks(root: etree._Element) -> list[etree._Element]:
 
     Returns:
         List of chunk elements
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     return root.xpath("//chunk")
 
@@ -51,6 +54,9 @@ def get_chunk_text(chunk: etree._Element) -> str:
 
     Returns:
         Raw text content of the chunk with all whitespace preserved
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     # Using etree.tostring to preserve all whitespace in the XML structure
     chunk_xml = etree.tostring(chunk, encoding="utf-8", method="xml").decode("utf-8")
@@ -76,6 +82,9 @@ def save_current_state(
                        with _nei_dict.json)
         chunk_id: ID of the chunk that was processed
         backup: Whether to create backup copies with timestamps
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     try:
         # Save current XML state
@@ -116,6 +125,9 @@ def extract_item_elements(xml_text: str) -> dict[str, str]:
 
     Returns:
         Dictionary mapping item IDs to their full XML content
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     item_map = {}
     # Pattern to match complete <item> elements including their attributes and content
@@ -149,6 +161,9 @@ def merge_tagged_items(
 
     Returns:
         Updated chunk with merged tagged items
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     # Create a deep copy of the original chunk to avoid modifying it
     updated_chunk = deepcopy(original_chunk)
@@ -203,6 +218,9 @@ def identify_entities(
 
     Returns:
         Chunk text with NEIs tagged
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     try:
         # Import here to avoid circular imports
@@ -284,6 +302,9 @@ def extract_response_text(response: Any) -> str:
 
     Returns:
         Extracted text content
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     try:
         # Handle response object based on its structure
@@ -320,6 +341,9 @@ def extract_nei_from_tags(text: str) -> dict[str, dict[str, Any]]:
 
     Returns:
         Dictionary of NEIs with their attributes
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     nei_dict = {}
     # Pattern to match <nei> tags with optional attributes
@@ -398,6 +422,9 @@ def process_chunks(
 
     Returns:
         Tuple of (updated XML root, updated NEI dictionary)
+
+    Used in:
+    - e11ocutionist/entitizer.py
     """
     # Initialize the NEI dictionary if not provided
     if nei_dict is None:
@@ -485,6 +512,12 @@ def process_document(
 
     Returns:
         Dictionary with processing statistics
+
+    Used in:
+    - e11ocutionist/__init__.py
+    - e11ocutionist/cli.py
+    - e11ocutionist/e11ocutionist.py
+    - e11ocutionist/entitizer.py
     """
     logger.info(f"Processing document for NEI tagging: {input_file} -> {output_file}")
 

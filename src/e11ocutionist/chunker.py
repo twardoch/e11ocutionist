@@ -32,7 +32,11 @@ DEFAULT_TEMPERATURE = 0.2
 
 @cache
 def get_token_encoder():
-    """Get the token encoder."""
+    """Get the token encoder.
+
+    Used in:
+    - e11ocutionist/chunker.py
+    """
     return tiktoken.encoding_for_model("gpt-4o")
 
 
@@ -45,6 +49,9 @@ def count_tokens(text: str) -> int:
 
     Returns:
         Integer token count
+
+    Used in:
+    - e11ocutionist/chunker.py
     """
     encoder = get_token_encoder()
     return len(encoder.encode(text))
@@ -61,6 +68,9 @@ def escape_xml_chars(text: str) -> str:
 
     Returns:
         Text with XML special characters escaped
+
+    Used in:
+    - e11ocutionist/chunker.py
     """
     text = text.replace("&", "&amp;")
     text = text.replace("<", "&lt;")
@@ -71,7 +81,11 @@ def escape_xml_chars(text: str) -> str:
 
 
 def generate_hash(text: str) -> str:
-    """Generate a 6-character base36 hash from text."""
+    """Generate a 6-character base36 hash from text.
+
+    Used in:
+    - e11ocutionist/chunker.py
+    """
     sha1 = hashlib.sha1(text.encode("utf-8")).hexdigest()
     base36 = int(sha1, 16)
     chars = "0123456789abcdefghijklmnopqrstuvwxyz"
@@ -84,7 +98,11 @@ def generate_hash(text: str) -> str:
 
 
 def generate_id(prev_id: str, content: str) -> str:
-    """Generate a unique ID for an item based on previous ID and content."""
+    """Generate a unique ID for an item based on previous ID and content.
+
+    Used in:
+    - e11ocutionist/chunker.py
+    """
     if not prev_id:
         return f"000000-{generate_hash(content)}"
     else:
@@ -93,12 +111,24 @@ def generate_id(prev_id: str, content: str) -> str:
 
 
 def split_into_paragraphs(text: str) -> list[str]:
+    """Split text into paragraphs based on blank lines while preserving all whitespace.
+
+    Used in:
+    - e11ocutionist/chunker.py
+    """
+    # Remove Windows line endings
     text = text.replace("\r\n", "\n")
     parts = re.split(r"(\n\s*\n)", text)
     return ["".join(parts[i : i + 2]) for i in range(0, len(parts), 2)]
 
 
 def is_heading(paragraph: str) -> bool:
+    """Check if paragraph is a markdown heading or chapter heading in Polish/English.
+
+    Used in:
+    - e11ocutionist/chunker.py
+    """
+    # Check for markdown heading format
     if bool(re.match(r"^#{1,6}\s+", paragraph)):
         return True
     if bool(re.search(r'(?i)^[„"]?(?:rozdział|chapter)\s+\w+', paragraph.strip())):

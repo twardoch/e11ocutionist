@@ -36,6 +36,9 @@ def extract_neis_from_document(xml_content: str) -> dict[str, dict[str, str]]:
 
     Returns:
         Dictionary of NEIs with their attributes
+
+    Used in:
+    - e11ocutionist/tonedown.py
     """
     nei_dict = {}
 
@@ -105,6 +108,9 @@ def detect_language(
 
     Returns:
         Tuple of (language_code, confidence)
+
+    Used in:
+    - e11ocutionist/tonedown.py
     """
     logger.info("Detecting document language")
 
@@ -211,6 +217,9 @@ def review_pronunciations(
 
     Returns:
         Updated NEI dictionary with refined pronunciations
+
+    Used in:
+    - e11ocutionist/tonedown.py
     """
     if not nei_dict:
         logger.warning("No NEIs to review")

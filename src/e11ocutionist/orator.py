@@ -36,6 +36,9 @@ def extract_chunk_items(xml_content: str) -> list[tuple[str, str, str]]:
 
     Returns:
         List of tuples containing (item_id, item_content, item_xml)
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     items = []
 
@@ -84,6 +87,9 @@ def restructure_sentences(
 
     Returns:
         List of tuples (item_id, processed_content)
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     if not items:
         return []
@@ -150,6 +156,9 @@ def normalize_words(
 
     Returns:
         List of tuples (item_id, processed_content)
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     if not items:
         return []
@@ -210,6 +219,9 @@ def enhance_punctuation(items: list[tuple[str, str]]) -> list[tuple[str, str]]:
 
     Returns:
         List of tuples (item_id, processed_content)
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     enhanced_items = []
 
@@ -259,6 +271,9 @@ def add_emotional_emphasis(
 
     Returns:
         List of tuples (item_id, processed_content)
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     if not items:
         return []
@@ -320,6 +335,9 @@ def extract_processed_items_from_response(
 
     Returns:
         List of tuples (item_id, processed_content)
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     processed_items = []
 
@@ -383,6 +401,9 @@ def merge_processed_items(
 
     Returns:
         Updated XML document
+
+    Used in:
+    - e11ocutionist/orator.py
     """
     try:
         # Create a mapping of item IDs to processed content
@@ -464,6 +485,12 @@ def process_document(
 
     Returns:
         Dictionary with processing statistics
+
+    Used in:
+    - e11ocutionist/__init__.py
+    - e11ocutionist/cli.py
+    - e11ocutionist/e11ocutionist.py
+    - e11ocutionist/orator.py
     """
     logger.info(
         f"Processing document for speech enhancement: {input_file} -> {output_file}"

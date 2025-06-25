@@ -7,6 +7,9 @@ into enhanced speech synthesis markup.
 This module serves as the main orchestrator for the processing pipeline.
 
 Created by Adam Twardoch
+
+Used in:
+- e11ocutionist/e11ocutionist.py
 """
 
 import json
@@ -22,7 +25,13 @@ from loguru import logger
 
 # Define processing steps as an enum
 class ProcessingStep(str, Enum):
-    """Pipeline processing steps."""
+    """Pipeline processing steps.
+
+    Used in:
+    - e11ocutionist/__init__.py
+    - e11ocutionist/cli.py
+    - e11ocutionist/e11ocutionist.py
+    """
 
     CHUNKING = "chunking"
     ENTITIZING = "entitizing"
@@ -33,7 +42,13 @@ class ProcessingStep(str, Enum):
 
 @dataclass
 class PipelineConfig:
-    """Configuration for the e11ocutionist pipeline."""
+    """Configuration for the e11ocutionist pipeline.
+
+    Used in:
+    - e11ocutionist/__init__.py
+    - e11ocutionist/cli.py
+    - e11ocutionist/e11ocutionist.py
+    """
 
     # Input and output
     input_file: Path
@@ -72,13 +87,22 @@ class PipelineConfig:
 
 
 class E11ocutionistPipeline:
-    """Main pipeline orchestrator for e11ocutionist."""
+    """Main pipeline orchestrator for e11ocutionist.
+
+    Used in:
+    - e11ocutionist/__init__.py
+    - e11ocutionist/cli.py
+    - e11ocutionist/e11ocutionist.py
+    """
 
     def __init__(self, config: PipelineConfig):
         """Initialize the pipeline with the given configuration.
 
         Args:
             config: Pipeline configuration
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
         """
         self.config = config
         self.progress: dict[str, Any] = {}
@@ -104,7 +128,11 @@ class E11ocutionistPipeline:
         self._setup_output_directory()
 
     def _setup_output_directory(self) -> None:
-        """Set up the output directory and progress file."""
+        """Set up the output directory and progress file.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         input_stem = self.config.input_file.stem
 
         if self.config.output_dir is None:
@@ -125,7 +153,11 @@ class E11ocutionistPipeline:
             self._load_progress()
 
     def _load_progress(self) -> None:
-        """Load progress from file."""
+        """Load progress from file.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         if not self.progress_file:
             self.progress = {}
             return
@@ -137,7 +169,11 @@ class E11ocutionistPipeline:
             self.progress = {}
 
     def _save_progress(self) -> None:
-        """Save progress to file."""
+        """Save progress to file.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         if not self.progress_file:
             return
 
@@ -152,6 +188,9 @@ class E11ocutionistPipeline:
 
         Args:
             file_path: Path to the file to back up
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
         """
         if not self.config.backup or not file_path.exists():
             return
@@ -173,6 +212,9 @@ class E11ocutionistPipeline:
             step: The processing step that was completed
             output_file: Path to the output file from this step
             completed: Whether the step completed successfully
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
         """
         step_name = step.value
         self.progress[step_name] = {
@@ -187,6 +229,10 @@ class E11ocutionistPipeline:
 
         Returns:
             Path to the final output file
+
+        Used in:
+        - e11ocutionist/cli.py
+        - e11ocutionist/e11ocutionist.py
         """
         try:
             self._setup_output_directory()
@@ -231,7 +277,11 @@ class E11ocutionistPipeline:
             raise
 
     def _run_chunking(self) -> None:
-        """Run the chunking step."""
+        """Run the chunking step.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         from .chunker import process_document
 
         logger.info("Running chunking step")
@@ -264,7 +314,11 @@ class E11ocutionistPipeline:
             raise
 
     def _run_entitizing(self) -> None:
-        """Run the entitizing step."""
+        """Run the entitizing step.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         from .entitizer import process_document
 
         logger.info("Running entitizing step")
@@ -309,7 +363,11 @@ class E11ocutionistPipeline:
             raise
 
     def _run_orating(self) -> None:
-        """Run the orating step."""
+        """Run the orating step.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         from .orator import process_document
 
         logger.info("Running orating step")
@@ -368,7 +426,11 @@ class E11ocutionistPipeline:
             raise
 
     def _run_toning_down(self) -> None:
-        """Run the toning down step."""
+        """Run the toning down step.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         from .tonedown import process_document
 
         logger.info("Running toning down step")
@@ -419,7 +481,11 @@ class E11ocutionistPipeline:
             raise
 
     def _run_elevenlabs_conversion(self) -> None:
-        """Run the ElevenLabs conversion step."""
+        """Run the ElevenLabs conversion step.
+
+        Used in:
+        - e11ocutionist/e11ocutionist.py
+        """
         from .elevenlabs_converter import process_document
 
         logger.info("Running ElevenLabs conversion step")
@@ -460,3 +526,47 @@ class E11ocutionistPipeline:
             logger.error(f"Error in ElevenLabs conversion step: {e}")
             self._update_progress(ProcessingStep.ELEVENLABS_CONVERSION, output_file)
             raise
+
+
+def main() -> None:
+    """Main entry point for e11ocutionist.
+
+    Used in:
+    - e11ocutionist/e11ocutionist.py
+    """
+    try:
+        # Example usage
+        config = PipelineConfig(
+            input_file=Path("path/to/input.xml"),
+            output_dir=Path("path/to/output"),
+            start_step=ProcessingStep.CHUNKING,
+            force_restart=False,
+            backup=False,
+            chunker_model="gpt-4",
+            chunker_temperature=0.2,
+            entitizer_model="gpt-4",
+            entitizer_temperature=0.1,
+            orator_model="gpt-4",
+            orator_temperature=0.7,
+            tonedown_model="gpt-4",
+            tonedown_temperature=0.1,
+            orator_all_steps=True,
+            orator_sentences=False,
+            orator_words=False,
+            orator_punctuation=False,
+            orator_emotions=False,
+            min_em_distance=None,
+            dialog_mode=True,
+            plaintext_mode=False,
+            verbose=False,
+            debug=False,
+        )
+        pipeline = E11ocutionistPipeline(config)
+        pipeline.run()
+    except Exception as e:
+        logger.error("An error occurred: %s", str(e))
+        raise
+
+
+if __name__ == "__main__":
+    main()
