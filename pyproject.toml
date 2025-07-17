@@ -39,6 +39,7 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pyupgrade>=3.19.0",
+    "pyinstaller>=6.0.0",
     # Stubs for mypy
     "lxml-stubs",
     # types-loguru is not a common package, loguru aims to be PEP 561 compatible
@@ -49,6 +50,8 @@ dev = [
 test = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-benchmark>=4.0.0",
 ]
 
 
@@ -57,8 +60,11 @@ all = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pyupgrade>=3.19.0",
+    "pyinstaller>=6.0.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-benchmark>=4.0.0",
     "fire",
     "lxml",
     "types-lxml",
