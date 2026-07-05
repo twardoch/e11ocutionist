@@ -8,6 +8,7 @@ normalizing words, enhancing punctuation, and adding emotional emphasis.
 """
 
 import re
+from collections.abc import Sequence
 from typing import Any
 from loguru import logger
 from lxml import etree
@@ -40,7 +41,7 @@ def extract_chunk_items(xml_content: str) -> list[tuple[str, str, str]]:
     Used in:
     - e11ocutionist/orator.py
     """
-    items = []
+    items: list[tuple[str, str, str]] = []
 
     try:
         # Parse the XML
@@ -324,7 +325,7 @@ def add_emotional_emphasis(
 
 
 def extract_processed_items_from_response(
-    response, original_items
+    response: Any, original_items: Sequence[tuple[str, ...]]
 ) -> list[tuple[str, str]]:
     """
     Extract processed items from LLM response.

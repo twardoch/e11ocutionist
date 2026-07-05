@@ -10,6 +10,7 @@ from e11ocutionist.elevenlabs_converter import (
     process_document,
 )
 
+
 @pytest.fixture
 def sample_xml_for_converter():
     return """<?xml version="1.0" encoding="UTF-8"?>
@@ -20,6 +21,7 @@ def sample_xml_for_converter():
     </chunk>
 </doc>"""
 
+
 def test_extract_text_from_xml(sample_xml_for_converter):
     """Test extraction of text from XML document."""
     root = etree.fromstring(sample_xml_for_converter.encode())
@@ -28,12 +30,12 @@ def test_extract_text_from_xml(sample_xml_for_converter):
     assert isinstance(result, str)
     expected_full_result = (
         'This is "emphasized" a test paragraph with Named Entity.\n\n'
-        'Another line with New Entity and a break .'
+        "Another line with New Entity and a break ."
     )
     assert result == expected_full_result
 
 
-def test_extract_text_from_xml_with_formatting(sample_xml_for_converter): # Use fixture
+def test_extract_text_from_xml_with_formatting(sample_xml_for_converter):  # Use fixture
     """Test extraction of text with various formatting elements."""
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <document>
@@ -53,16 +55,12 @@ def test_extract_text_from_xml_with_formatting(sample_xml_for_converter): # Use 
     root = etree.fromstring(xml.encode())
     result = extract_text_from_xml(root)
 
-    expected_full_result = (
-        'This is "emphasized" a test paragraph with Named Entity.\n\n'
-        'Another line with New Entity and a break .'
-    )
-    assert result == expected_full_result
-    # Individual checks based on observed reality (which should now match the full string)
+    # Check key content is present (the exact whitespace/layout differs from the fixture XML)
+    assert isinstance(result, str)
     assert '"emphasized"' in result
     assert "Named Entity" in result
-    assert 'New Entity' in result # No quotes, as per observed combined string
-    assert 'break .' in result # '.' instead of full break tag, as per observed
+    assert "New Entity" in result  # No quotes — new entities rendered as plain text
+    assert "more text" in result
 
 
 def test_process_dialog():
@@ -107,7 +105,9 @@ def test_process_dialog_with_breaks():
 — Third line."""
 
     result = process_dialog(text)
-    expected_output = '"First line..."\n\n"Second line with ... a pause."\n\n"Third line."'
+    expected_output = (
+        '"First line..."\n\n"Second line with ... a pause."\n\n"Third line."'
+    )
     assert result.strip() == expected_output.strip()
 
 

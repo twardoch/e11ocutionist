@@ -23,10 +23,16 @@ try:
     from elevenlabs import VoiceSettings, generate, set_api_key, voices
     from elevenlabs.api import Voices
 except ImportError:
-    logger.error("ElevenLabs API not available. Install with: pip install elevenlabs")
+    # The legacy top-level `elevenlabs.api` module was removed in newer releases,
+    # so this import may fail even when `elevenlabs` is installed. Only the `say`
+    # command needs it; keep this quiet so every CLI invocation isn't noisy.
+    logger.debug(
+        "ElevenLabs synthesis API unavailable; the 'say' command is disabled. "
+        "See TODO.md for migration to the current ElevenLabs client."
+    )
 
-    # Define placeholders to prevent errors
-    class ElevenLabsVoice:
+    # Define placeholders to prevent errors (shadow the optional imports above).
+    class ElevenLabsVoice:  # type: ignore[no-redef]
         """Placeholder for ElevenLabs Voice class.
 
         Used in:
@@ -41,14 +47,14 @@ except ImportError:
             self.voice_id: str = ""
             self.category: list[str] = []
 
-    class VoiceSettings:
+    class VoiceSettings:  # type: ignore[no-redef]
         """Placeholder for ElevenLabs VoiceSettings class.
 
         Used in:
         - e11ocutionist/elevenlabs_synthesizer.py
         """
 
-    class Voices:
+    class Voices:  # type: ignore[no-redef]
         """Placeholder for ElevenLabs Voices class.
 
         Used in:
@@ -71,7 +77,7 @@ except ImportError:
         - e11ocutionist/elevenlabs_synthesizer.py
         """
 
-    def voices(*args: Any, **kwargs: Any) -> list[ElevenLabsVoice]:
+    def voices(*args: Any, **kwargs: Any) -> list[ElevenLabsVoice]:  # type: ignore[no-redef]
         """Placeholder for ElevenLabs voices function.
 
         Used in:
@@ -134,7 +140,7 @@ def get_personal_voices(api_key: str | None) -> list[Voice]:
     set_api_key(api_key)
 
     # Get all voices
-    all_voices = voices()
+    all_voices = voices()  # type: ignore[operator]  # name resolves to elevenlabs submodule
 
     # Filter for personal voices (cloned, generated, professional)
     personal_voices = [
@@ -189,7 +195,7 @@ def synthesize_with_voice(
     os.makedirs(output_dir, exist_ok=True)
 
     # Sanitize the voice name for filename
-    sanitized_name = sanitize_filename(voice.name)
+    sanitized_name = sanitize_filename(voice.name or "")
     output_path = os.path.join(
         output_dir,
         f"{voice.voice_id}--{sanitized_name}.mp3",

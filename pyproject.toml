@@ -256,10 +256,46 @@ extend-select = [
     "W",
     "YTT",
 ]
-ignore = ["ARG001", "E501", "I001", "RUF001", "PLR2004", "EXE003", "ISC001"]
+ignore = [
+    "ARG001",
+    "E501",
+    "I001",
+    "RUF001",
+    "PLR2004",
+    "EXE003",
+    "ISC001",
+    # CLI ergonomics: Fire exposes command parameters directly, so boolean
+    # flags and wide signatures are intentional rather than code smells.
+    "FBT001",
+    "FBT002",
+    "FBT003",
+    "PLR0913",
+    "PLR0912",
+    "PLR0915",
+    "C901",
+    # Lazy/local imports keep optional heavy deps out of import time.
+    "PLC0415",
+    # Loop-variable rebinding is used deliberately in tree-walking helpers.
+    "PLW2901",
+    "B007",
+    # sha1 is used only for content-addressed IDs, never for security.
+    "S324",
+    # Best-effort cleanup blocks intentionally swallow exceptions.
+    "S110",
+    # Timestamps are local wall-clock by design (progress logs, filenames).
+    "DTZ005",
+    # print() is the CLI's user-facing output channel.
+    "T201",
+    # StrEnum is 3.11+, but the package supports 3.10; keep the str/Enum mixin.
+    "UP042",
+]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
+# Tests use assert, parse trusted fixtures, and import packages purely to
+# assert their availability.
+"tests/*" = ["S101", "S314", "F401"]
+# The pipeline uses assert to narrow post-setup invariants (output_dir is set).
+"src/e11ocutionist/e11ocutionist.py" = ["S101"]
 
 
 

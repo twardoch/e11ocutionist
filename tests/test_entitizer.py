@@ -178,8 +178,8 @@ def test_extract_nei_from_tags():
     assert "john smith" in result
     assert "new york" in result
     assert result["john smith"]["text"] == "John Smith"  # Check original text
-    assert result["john smith"]["type"] == "person"    # Check type attribute
-    assert result["new york"]["text"] == "New York"    # Check original text
+    assert result["john smith"]["type"] == "person"  # Check type attribute
+    assert result["new york"]["text"] == "New York"  # Check original text
     assert result["new york"]["type"] == "location"  # Check type attribute
 
 

@@ -14,7 +14,6 @@ try:
     from .tonedown import process_document as tonedown_process
     from .elevenlabs_converter import process_document as elevenlabs_converter_process
     from .elevenlabs_synthesizer import synthesize_with_all_voices
-    from .neifix import transform_nei_content
 
     __all__ = [
         "E11ocutionistPipeline",
@@ -27,7 +26,6 @@ try:
         "orator_process",
         "synthesize_with_all_voices",
         "tonedown_process",
-        "transform_nei_content",
     ]
 except ImportError:
     # Handle the case where the modules are not yet available

@@ -27,7 +27,6 @@ def test_package_structure():
         "elevenlabs_converter.py",
         "elevenlabs_synthesizer.py",
         "entitizer.py",
-        "neifix.py",
         "orator.py",
         "tonedown.py",
         "utils.py",

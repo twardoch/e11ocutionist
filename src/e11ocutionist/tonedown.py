@@ -8,12 +8,15 @@ pronunciation cues and reducing excessive emphasis.
 """
 
 import json
+from pathlib import Path
+from typing import Any
 from loguru import logger
 from lxml import etree
 from dotenv import load_dotenv
 
 from .utils import (
     count_tokens,
+    create_backup,
     parse_xml,
     serialize_xml,
 )
@@ -40,7 +43,7 @@ def extract_neis_from_document(xml_content: str) -> dict[str, dict[str, str]]:
     Used in:
     - e11ocutionist/tonedown.py
     """
-    nei_dict = {}
+    nei_dict: dict[str, dict[str, Any]] = {}
 
     try:
         # Parse the XML
@@ -377,19 +380,25 @@ def update_nei_tags(xml_content: str, nei_dict: dict[str, dict[str, str]]) -> st
 
             # Look up this NEI
             nei_key = nei_text.lower()
-            if nei_key in nei_lookup and "pronunciation" in nei_lookup[nei_key]:
-                pronunciation = nei_lookup[nei_key]["pronunciation"]
+            if nei_key in nei_lookup:
+                entry = nei_lookup[nei_key]
 
-                # Only update if there's a pronunciation
+                # Set pronunciation if present
+                pronunciation = entry.get("pronunciation", "")
                 if pronunciation:
-                    # Set the content to the pronunciation
                     nei.text = pronunciation
-
-                    # Set the orig attribute to the original text if not already set
                     if not nei.get("orig"):
                         nei.set("orig", nei_text)
 
-                    update_count += 1
+                # Mirror 'new' flag from the dict entry
+                if entry.get("new"):
+                    nei.set("new", "true")
+
+                # Mirror 'orig' from dict entry when not already set on the element
+                if not nei.get("orig") and entry.get("orig"):
+                    nei.set("orig", str(entry["orig"]))
+
+                update_count += 1
 
         logger.info(f"Updated {update_count} NEI tags with pronunciations")
 
@@ -524,5 +533,26 @@ def process_document(
     Returns:
         Path to output file
     """
-    # Implementation here
+    if verbose:
+        logger.enable("e11ocutionist")
+
+    logger.info(f"Toning down document: {input_file} -> {output_file}")
+
+    try:
+        xml_content = Path(input_file).read_text(encoding="utf-8")
+
+        if backup:
+            create_backup(input_file)
+
+        # Reduce emphasis tags that are too close together
+        result_xml = reduce_emphasis(xml_content, min_distance=min_em_distance)
+
+        # Write output
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_file).write_text(result_xml, encoding="utf-8")
+        logger.info(f"Saved toned-down document to {output_file}")
+
+    except Exception as exc:
+        logger.error(f"process_document failed: {exc}")
+
     return output_file

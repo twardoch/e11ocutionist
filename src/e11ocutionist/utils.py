@@ -17,7 +17,7 @@ from loguru import logger
 
 
 @cache
-def get_token_encoder():
+def get_token_encoder() -> "tiktoken.Encoding":
     """Get the token encoder for a specific model.
 
     Used in:
@@ -251,3 +251,82 @@ def clean_consecutive_newlines(content: str) -> str:
     - e11ocutionist/utils.py
     """
     return re.sub(r"\n{3,}", "\n\n", content)
+
+
+def sanitize_filename(filename: str, max_length: int = 255) -> str:
+    """Sanitize a string so it is safe to use as a filename.
+
+    Removes or replaces characters that are invalid on common filesystems
+    (Windows, macOS, Linux), prevents path traversal, strips null bytes and
+    control characters, and truncates to *max_length* bytes.
+
+    Args:
+        filename: Raw filename string (may contain dangerous characters).
+        max_length: Maximum allowed length for the result (default 255).
+
+    Returns:
+        A sanitized filename string that is safe for use on all major OSes.
+
+    Used in:
+    - e11ocutionist/utils.py
+    """
+    # Remove null bytes and ASCII control characters (0x00-0x1F, 0x7F)
+    filename = re.sub(r"[\x00-\x1f\x7f]", "", filename)
+
+    # Replace characters that are invalid on Windows / POSIX filesystems
+    filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
+
+    # Collapse any path-traversal components
+    filename = filename.replace("..", "_")
+
+    # Strip leading/trailing whitespace and dots (problematic on Windows)
+    filename = filename.strip(". \t")
+
+    # Handle Windows reserved device names (case-insensitive)
+    reserved = {
+        "con",
+        "aux",
+        "prn",
+        "nul",
+        "com1",
+        "com2",
+        "com3",
+        "com4",
+        "com5",
+        "com6",
+        "com7",
+        "com8",
+        "com9",
+        "lpt1",
+        "lpt2",
+        "lpt3",
+        "lpt4",
+        "lpt5",
+        "lpt6",
+        "lpt7",
+        "lpt8",
+        "lpt9",
+    }
+    dot_idx = filename.rfind(".")
+    base = filename[:dot_idx].lower() if dot_idx != -1 else filename.lower()
+    if base in reserved:
+        if dot_idx != -1:
+            filename = filename[:dot_idx] + "_" + filename[dot_idx:]
+        else:
+            filename = filename + "_"
+
+    # Ensure result is not empty after sanitization
+    if not filename:
+        filename = "unnamed"
+
+    # Truncate to max_length (measured in characters; keeps suffix intact)
+    if len(filename) > max_length:
+        # Try to preserve the extension
+        dot_idx = filename.rfind(".")
+        if dot_idx != -1 and (len(filename) - dot_idx) <= 10:
+            ext = filename[dot_idx:]
+            filename = filename[: max_length - len(ext)] + ext
+        else:
+            filename = filename[:max_length]
+
+    return filename

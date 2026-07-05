@@ -112,14 +112,14 @@ class E11ocutionistPipeline:
         if config.debug:
             logger.remove()
             logger.add(
-                lambda msg: print(msg),
+                print,
                 level="DEBUG",
                 format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
             )
         elif config.verbose:
             logger.remove()
             logger.add(
-                lambda msg: print(msg),
+                print,
                 level="INFO",
                 format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
             )
@@ -285,6 +285,7 @@ class E11ocutionistPipeline:
         from .chunker import process_document
 
         logger.info("Running chunking step")
+        assert self.config.output_dir is not None  # set by _setup_output_directory
 
         input_file = self.config.input_file
         output_file = self.config.output_dir / f"{input_file.stem}_step1_chunked.xml"
@@ -322,6 +323,7 @@ class E11ocutionistPipeline:
         from .entitizer import process_document
 
         logger.info("Running entitizing step")
+        assert self.config.output_dir is not None  # set by _setup_output_directory
 
         step_name = ProcessingStep.ENTITIZING.value
         prev_step = ProcessingStep.CHUNKING.value
@@ -371,6 +373,7 @@ class E11ocutionistPipeline:
         from .orator import process_document
 
         logger.info("Running orating step")
+        assert self.config.output_dir is not None  # set by _setup_output_directory
 
         prev_step = ProcessingStep.ENTITIZING.value
 
@@ -434,6 +437,7 @@ class E11ocutionistPipeline:
         from .tonedown import process_document
 
         logger.info("Running toning down step")
+        assert self.config.output_dir is not None  # set by _setup_output_directory
 
         prev_step = ProcessingStep.ORATING.value
 
@@ -455,20 +459,17 @@ class E11ocutionistPipeline:
 
         # Run the toning down process
         try:
-            em_args = (
-                {"min_distance": self.config.min_em_distance}
-                if self.config.min_em_distance
-                else {}
-            )
+            tonedown_kwargs: dict[str, Any] = {
+                "input_file": str(input_file),
+                "output_file": str(output_file),
+                "model": self.config.tonedown_model,
+                "temperature": self.config.tonedown_temperature,
+                "verbose": self.config.verbose,
+            }
+            if self.config.min_em_distance:
+                tonedown_kwargs["min_em_distance"] = self.config.min_em_distance
 
-            process_document(
-                input_file=str(input_file),
-                output_file=str(output_file),
-                model=self.config.tonedown_model,
-                temperature=self.config.tonedown_temperature,
-                verbose=self.config.verbose,
-                **em_args,
-            )
+            process_document(**tonedown_kwargs)
 
             # Update progress
             self._update_progress(ProcessingStep.TONING_DOWN, output_file)
@@ -489,6 +490,7 @@ class E11ocutionistPipeline:
         from .elevenlabs_converter import process_document
 
         logger.info("Running ElevenLabs conversion step")
+        assert self.config.output_dir is not None  # set by _setup_output_directory
 
         prev_step = ProcessingStep.TONING_DOWN.value
 

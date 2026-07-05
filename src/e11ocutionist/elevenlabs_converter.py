@@ -45,22 +45,21 @@ def extract_text_from_xml(xml_root: etree._Element) -> str:
             # Process item text
             # Convert <em>...</em> to "..."
             item_text = re.sub(r"<em>(.*?)</em>", r'"\1"', item_text, flags=re.DOTALL)
-            # Convert <nei new="true">...</nei> to "..."
-            # Using a temporarily simpler regex for diagnosis
+            # Convert all <nei ...>...</nei> tags to plain text content
             item_text = re.sub(
-                r'<nei[^>]*new="true"[^>]*>(.*?)</nei>', r'"\1"', item_text, flags=re.DOTALL
+                r"<nei[^>]*>(.*?)</nei>", r"\1", item_text, flags=re.DOTALL
             )
-            # Convert remaining <nei>...</nei> (that don't have new="true") to its content
-            item_text = re.sub(r"<nei(?![^>]*new=\"true\")[^>]*>(.*?)</nei>", r"\1", item_text, flags=re.DOTALL)
             # Replace <hr/> with <break time="0.5s" />
-            item_text = re.sub(r"<hr\s*/?>", r'<break time="0.5s" />', item_text) # This typically doesn't span lines
+            item_text = re.sub(
+                r"<hr\s*/?>", r'<break time="0.5s" />', item_text
+            )  # This typically doesn't span lines
             # Strip any remaining HTML/XML tags
             item_text = re.sub(r"<[^>]+>", "", item_text)
 
             # Unescape HTML entities
             item_text = unescape_xml_chars(item_text)
 
-            result.append(item_text.strip()) # Strip whitespace from each item's text
+            result.append(item_text.strip())  # Strip whitespace from each item's text
 
     # Join all items with double newlines
     return "\n\n".join(result)
@@ -90,23 +89,26 @@ def process_dialog(text: str) -> str:
         parts = line_str.split(" — ")
 
         for i, part_content in enumerate(parts):
-            is_dialog_start_of_part = part_content.strip().startswith("— ") if i == 0 else False # Only first part can start with "— "
+            is_dialog_start_of_part = (
+                part_content.strip().startswith("— ") if i == 0 else False
+            )  # Only first part can start with "— "
 
             if is_dialog_start_of_part:
-                if q_open: # If a q was open from previous line or part
+                if q_open:  # If a q was open from previous line or part
                     current_line_parts.append("</q>")
                 current_line_parts.append("<q>" + part_content.strip()[2:])
                 q_open = True
-            else: # Not a dialog start for this part
-                if i == 0 and not q_open : # Non-dialog line start
-                    current_line_parts.append(part_content)
-                elif i==0 and q_open: # Continues dialog from previous line
-                    current_line_parts.append(part_content)
-                elif i > 0 : # This is a toggle part
-                    if q_open:
-                        current_line_parts.append("</q><q>" + part_content)
-                    else: # Should not happen if previous part closed q correctly
-                        current_line_parts.append("<q>" + part_content) # Start q if it was closed by toggle
+            elif i == 0 and not q_open:  # Non-dialog line start
+                current_line_parts.append(part_content)
+            elif i == 0 and q_open:  # Continues dialog from previous line
+                current_line_parts.append(part_content)
+            elif i > 0:  # This is a toggle part
+                if q_open:
+                    current_line_parts.append("</q><q>" + part_content)
+                else:  # Should not happen if previous part closed q correctly
+                    current_line_parts.append(
+                        "<q>" + part_content
+                    )  # Start q if it was closed by toggle
                     # q_open state is effectively toggled by </q><q>
 
             # After processing a part, if it's a dialog part and it's the last part of the line,
@@ -125,22 +127,7 @@ def process_dialog(text: str) -> str:
     # The legacy method of closing on the previous line when a non-dialog line is encountered
     # is simpler.
 
-    # Let's try the simpler legacy line-by-line state machine:
-    final_processed_lines = []
-    q_actually_open = False
-    for line_to_finalize in processed_lines: # These lines now have <q>...</q><q>...
-        # This simple approach might not be enough.
-        # The core issue is that a single line can be "— dialog — narration — dialog."
-        # which requires <q>dialog</q> narration <q>dialog</q>.
-        # The split by " — " and then rejoining parts with toggles handles this.
-        # The main thing is to ensure the overall line, if it started dialog, ends dialog.
-        # And if a non-dialog line follows a dialog line, the dialog line is closed.
-
-        # The current `processed_lines` from above loop might be too complex.
-        # Let's use a clearer implementation based on legacy.
-        pass # Placeholder for now. I need to rethink this.
-
-    # Re-implementing with clearer state based on legacy
+    # Line-by-line state machine based on the legacy implementation.
     processed_lines = []
     q_is_open_for_current_line = False
     for line_str in lines:
@@ -150,14 +137,18 @@ def process_dialog(text: str) -> str:
         # Determine if the line as a whole starts dialog
         first_part_stripped = line_parts[0].strip()
         if first_part_stripped.startswith("— "):
-            if q_is_open_for_current_line and output_line: # Should not happen if output_line is fresh
-                 output_line += "</q>" # Should be on previous line actually
+            if (
+                q_is_open_for_current_line and output_line
+            ):  # Should not happen if output_line is fresh
+                output_line += "</q>"  # Should be on previous line actually
             output_line += "<q>" + first_part_stripped[2:]
             q_is_open_for_current_line = True
-            line_parts[0] = first_part_stripped[2:] # Content after "— "
-        elif q_is_open_for_current_line : # Previous line ended open, this one is continuation
-             output_line += line_parts[0]
-        else: # Normal line
+            line_parts[0] = first_part_stripped[2:]  # Content after "— "
+        elif (
+            q_is_open_for_current_line
+        ):  # Previous line ended open, this one is continuation
+            output_line += line_parts[0]
+        else:  # Normal line
             output_line += line_parts[0]
 
         # Handle toggles for parts > 0
@@ -172,14 +163,15 @@ def process_dialog(text: str) -> str:
         # If the line ended with an open q, and next line is not dialog, or it's last line
         # This part is tricky. The legacy code did this by looking at next line or at end.
         # For now, if a line started with <q> or had <q> in it, assume it should close if not explicitly toggled off.
-        if ("<q>" in output_line or output_line.startswith("<q>")) and q_is_open_for_current_line:
+        if (
+            "<q>" in output_line or output_line.startswith("<q>")
+        ) and q_is_open_for_current_line:
             # Check if this line is the last dialog line in a sequence
             # This requires looking ahead, which is complex here.
             # A simpler approach: if q_is_open_for_current_line is true at end of processing this line,
             # it means it expects to be continued or it's the last part of a toggle.
             # The overall open/close is better handled by post-processing the joined string.
             pass
-
 
         processed_lines.append(output_line)
 
@@ -200,42 +192,52 @@ def process_dialog(text: str) -> str:
     # Reverting to slightly fixed version of what was present before this big change:
     lines = text.split("\n")
     processed_lines = []
-    in_dialog_context = False # True if we are generally in a dialog across multiple lines
+    in_dialog_context = (
+        False  # True if we are generally in a dialog across multiple lines
+    )
 
     for idx, line_str_original in enumerate(lines):
-        line_to_process = line_str_original # work on a copy
+        line_to_process = line_str_original  # work on a copy
 
         is_current_line_dialog_start = line_to_process.strip().startswith("— ")
 
         if is_current_line_dialog_start:
-            if in_dialog_context and processed_lines: # Dialog was open from previous line. Close it.
-                 processed_lines[-1] += "</q>"
-            line_to_process = "<q>" + line_to_process.strip()[2:] # Start new dialog
+            if (
+                in_dialog_context and processed_lines
+            ):  # Dialog was open from previous line. Close it.
+                processed_lines[-1] += "</q>"
+            line_to_process = "<q>" + line_to_process.strip()[2:]  # Start new dialog
             in_dialog_context = True
-        elif in_dialog_context : # This line is not a dialog start, but previous was.
-            if processed_lines : processed_lines[-1] += "</q>" # Close previous line's dialog
+        elif in_dialog_context:  # This line is not a dialog start, but previous was.
+            if processed_lines:
+                processed_lines[-1] += "</q>"  # Close previous line's dialog
             in_dialog_context = False
 
         # Handle internal toggles " — " for lines that are now considered dialog
-        if "<q>" in line_to_process or is_current_line_dialog_start: # if it's a dialog line
+        if (
+            "<q>" in line_to_process or is_current_line_dialog_start
+        ):  # if it's a dialog line
             parts = line_to_process.split(" — ")
-            if len(parts) > 1: # Contains " — " toggles
+            if len(parts) > 1:  # Contains " — " toggles
                 # First part might already start with <q>
                 current_part_is_open = parts[0].startswith("<q>")
                 temp_line = parts[0]
                 for k in range(1, len(parts)):
-                    if current_part_is_open: temp_line += "</q>"
-                    else: temp_line += "<q>"
+                    if current_part_is_open:
+                        temp_line += "</q>"
+                    else:
+                        temp_line += "<q>"
                     current_part_is_open = not current_part_is_open
                     temp_line += parts[k]
                 line_to_process = temp_line
                 # Ensure the line ends in a consistent state regarding q_open for the context
                 in_dialog_context = current_part_is_open
 
-
         processed_lines.append(line_to_process)
 
-    if in_dialog_context and processed_lines: # If overall dialog context is still open at the end
+    if (
+        in_dialog_context and processed_lines
+    ):  # If overall dialog context is still open at the end
         processed_lines[-1] += "</q>"
 
     result = "\n".join(processed_lines)

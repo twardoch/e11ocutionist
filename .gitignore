@@ -313,5 +313,18 @@ Thumbs.db
 # Project specific
 __version__.py
 _private
-# SpecStory explanation file
-.specstory/.what-is-this.md
+
+# SpecStory chat history (local development artifact)
+.specstory/
+
+# Generated pipeline / test scratch output
+output.txt
+output.xml
+output_dir/
+
+# Repomix codebase snapshots
+src.txt
+llms.txt
+
+# Built distributions (produced by release workflow, not committed)
+dist/

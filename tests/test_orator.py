@@ -153,7 +153,7 @@ def test_process_document(temp_workspace):
     )
 
     assert isinstance(result, dict)
-    assert "processed_items" in result
+    assert "items_processed" in result
     assert output_file.exists()
 
     # Verify the processed content

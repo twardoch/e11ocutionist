@@ -5,8 +5,8 @@
 import os
 from pathlib import Path
 import sys
-from typing import cast
 
+import fire
 from loguru import logger
 
 from e11ocutionist import (
@@ -40,12 +40,11 @@ def _configure_logging(debug: bool = False, verbose: bool = False) -> None:
         "<level>{message}</level>"
     )
 
-    kwargs = {
-        "sink": sys.stdout,
-        "format": log_format,
-        "level": "DEBUG" if debug else "INFO" if verbose else "WARNING",
-    }
-    logger.add(**kwargs)
+    logger.add(
+        sys.stdout,
+        format=log_format,
+        level="DEBUG" if debug else "INFO" if verbose else "WARNING",
+    )
 
 
 def _validate_temperature(temperature: float) -> None:
@@ -366,40 +365,7 @@ def say(
         raise ValueError(msg) from e
 
 
-def fix_nei(
-    input_file: str,
-    output_file: str,
-    verbose: bool = False,
-    debug: bool = False,
-) -> str:
-    """Fix named entity issues in text.
-
-    Used in:
-    - e11ocutionist/cli.py
-    """
-    _configure_logging(debug, verbose)
-
-    if input_file == output_file:
-        msg = "Input and output files must be different"
-        raise ValueError(msg)
-
-    logger.info("Running NEI fixing step:")
-    logger.info(f"Input: {input_file}")
-    logger.info(f"Output: {output_file}")
-
-    try:
-        neifix.transform_nei_content(
-            input_file=input_file,
-            output_file=output_file,
-        )
-        logger.info(f"NEI fixing completed: {output_file}")
-        return output_file
-    except Exception as e:
-        logger.error(f"Error: {e!s}")
-        raise
-
-
-def process(  # noqa: PLR0913
+def process(
     input_file: str,
     output_dir: str | None = None,
     start_step: str = "chunking",
@@ -476,20 +442,12 @@ def process(  # noqa: PLR0913
         debug=debug,
     )
 
-    # Run pipeline
+    # Run pipeline; run() returns the path to the final output file.
     pipeline = E11ocutionistPipeline(config)
-    result = pipeline.run()
-
-    # Return path to final output file
-    if isinstance(result, dict) and "final_output_file" in result:
-        return str(cast(dict[str, str], result)["final_output_file"])
-    return str(config.output_dir)
+    return str(pipeline.run())
 
 
 # --- Main CLI entrypoint using python-fire ---
-import fire
-
-
 def main() -> None:
     """Expose CLI functions via Fire."""
     fire.Fire(

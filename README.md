@@ -1,6 +1,16 @@
 # e11ocutionist
 
+<p align="center">
+  <img src="docs/assets/icon.png" alt="e11ocutionist" width="200">
+</p>
+
 **Transform your written content into captivating audio with `e11ocutionist`, a powerful multi-stage document processing pipeline designed to prepare literary text for high-quality speech synthesis, especially optimized for services like ElevenLabs.**
+
+```
+  text  ─▶  chunk  ─▶  entitize  ─▶  orate  ─▶  tonedown  ─▶  11labs  ─▶  spoken audio
+          (segment)   (tag NEIs)  (make it   (calm the      (export
+                                   speakable)  markup)       for TTS)
+```
 
 `e11ocutionist` intelligently refines your documents through a series of steps, ensuring that the final audio output is natural, engaging, and accurately reflects the nuances of your text.
 

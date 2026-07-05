@@ -1,23 +1,20 @@
-# E11ocutionist Streamlining TODO (MVP Focus)
+# e11ocutionist — TODO
 
-## Phase 1: Code Removal & Simplification
+Streamlining and modernization are done. Remaining items (see PLAN.md for detail):
 
--   [ ] Delete the entire `legacy_src/` directory and its contents.
--   [ ] Delete `legacy_src.txt`.
--   [ ] Delete `src/e11ocutionist/neifix.py`.
--   [ ] Remove `fix_nei` function and CLI command from `src/e11ocutionist/cli.py`.
--   [ ] Delete example `main()` function from `src/e11ocutionist/e11ocutionist.py`.
+## ElevenLabs `say` command
+- [ ] Port `elevenlabs_synthesizer.py` to the current `ElevenLabs()` client API
+- [ ] Add client-mocked tests (no live API calls)
 
-## Phase 2: Documentation & Testing
+## Documentation
+- [ ] Spec the inter-stage XML format (tags + attributes per stage)
+- [ ] Document the `progress.json` schema
 
--   [ ] Remove references to `legacy_src` from `README.md` (if any).
--   [ ] Remove `fix-nei` command from `README.md` CLI examples.
--   [ ] Delete `tests/test_neifix.py`.
--   [ ] Review and ensure other tests are relevant and passing.
--   [ ] Run all tests to confirm no regressions.
+## Robustness
+- [ ] Verify consistent `lxml` usage across stages
+- [ ] Add a fully-mocked end-to-end pipeline test
+- [ ] Add an offline/`--dry-run` mode
 
-## Phase 3: Finalization
-
--   [ ] Update `CHANGELOG.md` with all changes.
--   [ ] Review `PLAN.md` and `TODO.md` for completion.
--   [ ] Submit all changes.
+## Test coverage
+- [ ] Re-enable the 10 skipped filesystem/symlink tests where CI allows
+- [ ] Raise coverage on `E11ocutionistPipeline` step methods

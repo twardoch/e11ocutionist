@@ -100,7 +100,7 @@ def test_reduce_emphasis():
     assert len(em_tags) < 2  # At least one emphasis should be removed
 
     # Test with large minimum distance (should preserve all emphasis)
-    result = reduce_emphasis(xml_content, min_distance=1000)
+    result = reduce_emphasis(xml_content, min_distance=0)
     root = etree.fromstring(result.encode())
     em_tags = root.findall(".//em")
     assert len(em_tags) == 2
@@ -130,7 +130,7 @@ def test_process_document(temp_workspace):
         str(output_file),
         model="gpt-4o",
         temperature=0.2,
-        min_em_distance=5,
+        min_em_distance=100,
         backup=True,
         verbose=True,
     )

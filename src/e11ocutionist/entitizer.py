@@ -10,7 +10,7 @@ for consistent pronunciation in speech synthesis.
 import json
 import os
 import re
-from typing import Any
+from typing import Any, cast
 from copy import deepcopy
 
 import backoff
@@ -42,7 +42,7 @@ def get_chunks(root: etree._Element) -> list[etree._Element]:
     Used in:
     - e11ocutionist/entitizer.py
     """
-    return root.xpath("//chunk")
+    return cast(list[etree._Element], root.xpath("//chunk"))
 
 
 def get_chunk_text(chunk: etree._Element) -> str:
@@ -326,7 +326,7 @@ def extract_response_text(response: Any) -> str:
             logger.error("Unexpected response object")
             content = str(response)
 
-        return content
+        return cast(str, content)
     except Exception as e:
         logger.error(f"Error extracting response text: {e}")
         return ""
@@ -345,13 +345,13 @@ def extract_nei_from_tags(text: str) -> dict[str, dict[str, Any]]:
     Used in:
     - e11ocutionist/entitizer.py
     """
-    nei_dict = {}
+    nei_dict: dict[str, dict[str, Any]] = {}
     # Pattern to match <nei> tags with optional attributes
     pattern = r"<nei(?:\s+([^>]*))?>(.*?)</nei>"
 
     for match in re.finditer(pattern, text, re.DOTALL):
         attributes_str = match.group(1) or ""
-        content = match.group(2).strip() # Ensure content is stripped
+        content = match.group(2).strip()  # Ensure content is stripped
 
         # Skip empty content
         if not content:
@@ -366,24 +366,28 @@ def extract_nei_from_tags(text: str) -> dict[str, dict[str, Any]]:
 
         if key not in nei_dict:
             nei_dict[key] = {
-                "text": content, # Store original cased content
+                "text": content,  # Store original cased content
                 "count": 1,
-                **current_attributes # Add all found attributes
+                **current_attributes,  # Add all found attributes
             }
             # Explicitly set 'new' based on its presence in attributes,
             # rather than defaulting to True then False.
             # If 'new' attribute is literally "true", it's new. Otherwise, if attr not present, it's new.
             if "new" not in current_attributes:
-                 nei_dict[key]["new"] = True
-            elif current_attributes.get("new") != "true": # handles new="false" or other values
-                 nei_dict[key]["new"] = False
+                nei_dict[key]["new"] = True
+            elif (
+                current_attributes.get("new") != "true"
+            ):  # handles new="false" or other values
+                nei_dict[key]["new"] = False
 
         else:
             nei_dict[key]["count"] += 1
             # Update attributes if not already present or if they differ,
             # preferring existing ones unless a specific logic is needed.
             for attr_name, attr_value in current_attributes.items():
-                if attr_name not in nei_dict[key]: # Add new attributes from this occurrence
+                if (
+                    attr_name not in nei_dict[key]
+                ):  # Add new attributes from this occurrence
                     nei_dict[key][attr_name] = attr_value
 
             # If it's seen again, it's not "new" overall for the dictionary,
@@ -391,10 +395,9 @@ def extract_nei_from_tags(text: str) -> dict[str, dict[str, Any]]:
             # Current logic: if an entity is re-encountered, its 'new' status in the dict becomes False.
             # unless this specific tag had new="true"
             if current_attributes.get("new") == "true":
-                nei_dict[key]["new"] = True # This specific instance was marked new
+                nei_dict[key]["new"] = True  # This specific instance was marked new
             else:
                 nei_dict[key]["new"] = False
-
 
     return nei_dict
 
