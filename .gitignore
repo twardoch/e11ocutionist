@@ -328,3 +328,5 @@ llms.txt
 
 # Built distributions (produced by release workflow, not committed)
 dist/
+.cursor/
+.giga/
